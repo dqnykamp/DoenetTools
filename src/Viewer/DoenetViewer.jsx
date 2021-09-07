@@ -48,6 +48,7 @@ class DoenetViewerChild extends Component {
     this.createCore = this.createCore.bind(this);
     this.loadState = this.loadState.bind(this);
     this.localStateChanged = this.localStateChanged.bind(this);
+    this.saveContentInteractionsForLatestTransient = this.saveContentInteractionsForLatestTransient.bind(this);
     // this.submitResponse = this.submitResponse.bind(this);
     this.recordSolutionView = this.recordSolutionView.bind(this);
     this.recordEvent = this.recordEvent.bind(this);
@@ -58,6 +59,8 @@ class DoenetViewerChild extends Component {
 
     this.needNewCoreFlag = false;
     this.weightsStored = false;
+
+    this.timeoutIdForTransient = null;
 
     //Track if viewer should update with:
     //this.state.doenetML, this.state.attemptNumber, and this.state.contentId
@@ -227,7 +230,7 @@ class DoenetViewerChild extends Component {
       this.savedUserAssignmentAttemptNumber !== this.attemptNumber
     ) {
       // console.log(">>>>savedUserAssignmentAttemptNumber!!!")
-      
+
       axios.post('/api/initAssignmentAttempt.php', {
         doenetId: this.props.doenetId,
         weights: this.core.scoredItemWeights,
@@ -236,7 +239,7 @@ class DoenetViewerChild extends Component {
         requestedVariant: JSON.stringify(this.requestedVariant, serializedComponentsReplacer),
         generatedVariant: JSON.stringify(this.generatedVariant, serializedComponentsReplacer),
         itemVariantInfo: this.itemVariantInfo.map(x => JSON.stringify(x, serializedComponentsReplacer)),
-      }).then(({data}) => {
+      }).then(({ data }) => {
         // console.log(">>>>initAssignmentAttempt data",data)
 
         this.savedUserAssignmentAttemptNumber = this.attemptNumber; //In callback
@@ -267,62 +270,39 @@ class DoenetViewerChild extends Component {
     // allowSavePageState is true
     // (also won't save if transient is true but that will never happen :) )
 
-    // TODO: what should we do with transient updates?
-    if (transient || !this.allowSavePageState && !this.allowLocalPageState) {
-      return;
-    }
 
 
-    for (let componentName in newStateVariableValues) {
-      if (!this.cumulativeStateVariableChanges[componentName]) {
-        this.cumulativeStateVariableChanges[componentName] = {}
-      }
-      for (let varName in newStateVariableValues[componentName]) {
-        let cumValues = this.cumulativeStateVariableChanges[componentName][varName];
-        // if cumValues is an object with mergeObject = true,
-        // then merge attributes from newStateVariableValues into cumValues
-        if (typeof cumValues === "object" && cumValues !== null && cumValues.mergeObject) {
-          Object.assign(cumValues, newStateVariableValues[componentName][varName])
-        } else {
-          this.cumulativeStateVariableChanges[componentName][varName] = newStateVariableValues[componentName][varName];
+    if (transient) {
+      if (this.allowSavePageState || this.allowLocalPageState) {
+        this.stateVariablesFromTransient = newStateVariableValues;
+        this.contentIdFromTransient = contentId;
+
+        if (this.timeoutIdForTransient === null) {
+          this.timeoutIdForTransient = setTimeout(
+            this.saveContentInteractionsForLatestTransient,
+            5000
+          )
         }
       }
-    }
-
-    let changeString = JSON.stringify(this.cumulativeStateVariableChanges, serializedComponentsReplacer);
-
-
-    let variantString = JSON.stringify(this.generatedVariant, serializedComponentsReplacer);
-
-    // save to database
-    // check the cookie to see if allowed to record
-    // display warning if is assignment for class and have returned off recording
-    // maybe that's shown when enroll in class, and you cannot turn it off
-    // without disenrolling from class
-
-
-    const data = {
-      contentId,
-      stateVariables: changeString,
-      attemptNumber: this.attemptNumber,
-      doenetId: this.props.doenetId,
-      variant: variantString,
-    }
-
-    if (this.allowLocalPageState) {
-      localStorage.setItem(`${contentId}${this.props.doenetId}${this.attemptNumber}`, JSON.stringify({ stateVariables: changeString, variant: variantString }))
-    }
-
-    if (!this.allowSavePageState) {
       return;
     }
 
-    axios.post('/api/recordContentInteraction.php', data)
+    if (this.timeoutIdForTransient !== null) {
+      clearTimeout(this.timeoutIdForTransient);
+      this.timeoutIdForTransient = null;
+    }
+
+    if (!this.allowSavePageState && !this.allowLocalPageState) {
+      return;
+    }
+
+
+    let changeString = this.saveContentInteractions(newStateVariableValues, contentId);
     // .then(resp => {
     // });
 
 
-    if (!this.allowSaveSubmissions) {
+    if (!this.allowSavePageState || !this.allowSaveSubmissions) {
       return;
     }
 
@@ -367,6 +347,65 @@ class DoenetViewerChild extends Component {
     }
 
 
+  }
+
+  saveContentInteractionsForLatestTransient() {
+    this.saveContentInteractions(
+      this.stateVariablesFromTransient,
+      this.contentIdFromTransient
+    )
+    this.timeoutIdForTransient = null;
+  }
+
+  saveContentInteractions(newStateVariableValues, contentId) {
+
+    console.log(`saveContentInteractions`, JSON.stringify(newStateVariableValues), contentId)
+
+    for (let componentName in newStateVariableValues) {
+      if (!this.cumulativeStateVariableChanges[componentName]) {
+        this.cumulativeStateVariableChanges[componentName] = {};
+      }
+      for (let varName in newStateVariableValues[componentName]) {
+        let cumValues = this.cumulativeStateVariableChanges[componentName][varName];
+        // if cumValues is an object with mergeObject = true,
+        // then merge attributes from newStateVariableValues into cumValues
+        if (typeof cumValues === "object" && cumValues !== null && cumValues.mergeObject) {
+          Object.assign(cumValues, newStateVariableValues[componentName][varName]);
+        } else {
+          this.cumulativeStateVariableChanges[componentName][varName] = newStateVariableValues[componentName][varName];
+        }
+      }
+    }
+
+    let changeString = JSON.stringify(this.cumulativeStateVariableChanges, serializedComponentsReplacer);
+
+
+    let variantString = JSON.stringify(this.generatedVariant, serializedComponentsReplacer);
+
+    // save to database
+    // check the cookie to see if allowed to record
+    // display warning if is assignment for class and have returned off recording
+    // maybe that's shown when enroll in class, and you cannot turn it off
+    // without disenrolling from class
+    const data = {
+      contentId,
+      stateVariables: changeString,
+      attemptNumber: this.attemptNumber,
+      doenetId: this.props.doenetId,
+      variant: variantString,
+    };
+
+    if (this.allowLocalPageState) {
+      localStorage.setItem(`${contentId}${this.props.doenetId}${this.attemptNumber}`, JSON.stringify({ stateVariables: changeString, variant: variantString }));
+    }
+
+    if (!this.allowSavePageState) {
+      return;
+    }
+
+    axios.post('/api/recordContentInteraction.php', data);
+
+    return changeString;
   }
 
   loadState(callback) {
