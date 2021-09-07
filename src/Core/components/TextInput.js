@@ -232,7 +232,8 @@ export default class Textinput extends Input {
           componentName: this.componentName,
           stateVariable: "immediateValue",
           value: text,
-        }]
+        }],
+        transient: true
       })
     }
   }
