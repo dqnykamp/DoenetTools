@@ -291,7 +291,7 @@ $result = $conn->query($sql);
 $sql = " 
   ALTER TABLE `user_assignment` 
   DROP COLUMN `contentId`,
-  ADD COLUMN `doenetIdOverride` VARCHAR(255) NULL DEFAULT NULL COMMENT 'NULL means no override' AFTER `userId`,
+  ADD COLUMN `isUnassigned` bit(1) NOT NULL DEFAULT b'0' AFTER `creditOverride`
   CHANGE COLUMN `doenetId` `doenetId` VARCHAR(255) NOT NULL DEFAULT '' ,
   CHANGE COLUMN `numberOfAttemptsAllowedOverride` `numberOfAttemptsAllowedAdjustment` INT(11) NULL DEFAULT NULL ,
   CHANGE COLUMN `userId` `userId` CHAR(21) NOT NULL ,
