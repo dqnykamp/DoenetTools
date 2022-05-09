@@ -55,18 +55,18 @@ $sql = "
 
 $result = $conn->query($sql); 
 
-$sql = " 
+// $sql = " 
   
-  ALTER TABLE `content` 
-  CHANGE COLUMN `doenetId` `doenetId` VARCHAR(255) NOT NULL DEFAULT '' ,
-  CHANGE COLUMN `contentId` `cid` CHAR(64) NULL DEFAULT '0' ,
-  DROP INDEX `contentId` ,
-  ADD INDEX `cid` (`cid` ASC);
-  ;
+//   ALTER TABLE `content` 
+//   CHANGE COLUMN `doenetId` `doenetId` VARCHAR(255) NOT NULL DEFAULT '' ,
+//   CHANGE COLUMN `contentId` `cid` CHAR(64) NULL DEFAULT '0' ,
+//   DROP INDEX `contentId` ,
+//   ADD INDEX `cid` (`cid` ASC);
+//   ;
   
-  ";
+//   ";
 
-$result = $conn->query($sql); 
+// $result = $conn->query($sql); 
 
 $sql = " 
   CREATE TABLE `course` (
@@ -91,7 +91,6 @@ $sql = "
     `type` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
     `courseId` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
     `doenetId` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-    `cid` char(64) COLLATE utf8_unicode_ci DEFAULT NULL,
     `parentDoenetId` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
     `label` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Untitled',
     `creationDate` timestamp NULL DEFAULT NULL,
@@ -234,7 +233,20 @@ $sql = "
 
 $result = $conn->query($sql); 
 
-$sql = " 
+// $sql = " 
+//   CREATE TABLE `pages` (
+//     `courseId` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+//     `containingDoenetId` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
+//     `doenetId` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+//     `label` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Untitled',
+//     `isDeleted` tinyint(1) NOT NULL DEFAULT '0',
+//     PRIMARY KEY (`containingDoenetId`,`doenetId`),
+//     KEY `doenetId` (`doenetId`),
+//     CONSTRAINT `pages_ibfk_1` FOREIGN KEY (`containingDoenetId`) REFERENCES `course_content` (`doenetId`) ON DELETE CASCADE
+//   ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+//   ";
+
+  $sql = " 
   CREATE TABLE `pages` (
     `courseId` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
     `containingDoenetId` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -243,9 +255,7 @@ $sql = "
     `isDeleted` tinyint(1) NOT NULL DEFAULT '0',
     PRIMARY KEY (`containingDoenetId`,`doenetId`),
     KEY `doenetId` (`doenetId`),
-    CONSTRAINT `pages_ibfk_1` FOREIGN KEY (`containingDoenetId`) REFERENCES `course_content` (`doenetId`) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-  
   ";
 
 $result = $conn->query($sql); 
