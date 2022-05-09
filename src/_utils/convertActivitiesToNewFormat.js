@@ -17,9 +17,10 @@ export async function convertActivitiesToNewFormat() {
     const server = await axios.get(`/media/old/${activityData.draftPageOldCid}.doenet`);
 
     let draftDoenetML = server.data;
-
+    // console.log("draft server",server)
 
     const { data } = await axios.post("/api/saveDoenetML.php", { doenetML: draftDoenetML, pageId, courseId })
+    // console.log("data",data)
 
     if (!data.success) {
       console.error(data);
@@ -31,6 +32,7 @@ export async function convertActivitiesToNewFormat() {
 
     if (activityData.assignedPageOldCid) {
       const server = await axios.get(`/media/old/${activityData.assignedPageOldCid}.doenet`);
+    console.log("activity server",server)
 
       let assignedDoenetML = server.data;
 
@@ -39,6 +41,8 @@ export async function convertActivitiesToNewFormat() {
         saveAsCid: 1,
         pageId, courseId
       })
+
+    console.log("activitydata",data)
 
       if (!data.success) {
         console.log( {
@@ -70,15 +74,16 @@ export async function convertActivitiesToNewFormat() {
         activityDoenetML
       });
 
-      if(!resp.data.success) {
+      // if(!resp.data.success) {
         console.log({
           courseId, doenetId: activityData.doenetId,
           isAssigned: true,
           activityDoenetML
         })
-        console.error(resp);
-        throw Error("couldn't save compiled activity");
-      }
+        console.log(resp);
+        // console.error(resp);
+      //   throw Error("couldn't save compiled activity");
+      // }
 
 
 

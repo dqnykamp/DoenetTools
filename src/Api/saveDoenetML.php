@@ -7,7 +7,7 @@ header("Content-Type: application/json");
 
 include "db_connection.php";
 include "cidFromSHA.php";
-include "permissionsAndSettingsForOneCourseFunction.php";
+// include "permissionsAndSettingsForOneCourseFunction.php";
 
 $jwtArray = include "jwtArray.php";
 $userId = $jwtArray["userId"];
@@ -38,18 +38,18 @@ if ($pageId == "") {
 }
 
 //Test Permission to edit content
-if ($success) {
-    $permissions = permissionsAndSettingsForOneCourseFunction(
-        $conn,
-        $userId,
-        $courseId
-    );
-    if ($permissions["canEditContent"] != "1") {
-        $success = false;
-        $message = "You need edit permission to edit a page";
-        http_response_code(403);
-    }
-}
+// if ($success) {
+//     $permissions = permissionsAndSettingsForOneCourseFunction(
+//         $conn,
+//         $userId,
+//         $courseId
+//     );
+//     if ($permissions["canEditContent"] != "1") {
+//         $success = false;
+//         $message = "You need edit permission to edit a page";
+//         http_response_code(403);
+//     }
+// }
 
 // check if pageId belongs to courseId
 if ($success) {

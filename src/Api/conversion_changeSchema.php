@@ -286,10 +286,11 @@ $sql = "
 
 $result = $conn->query($sql); 
 
+//Error due to null userId's (3 rows)
 $sql = " 
   ALTER TABLE `user_assignment` 
   DROP COLUMN `contentId`,
-  ADD COLUMN `isUnassigned` bit(1) NOT NULL DEFAULT b'0' AFTER `creditOverride`
+  ADD COLUMN `isUnassigned` bit(1) NOT NULL DEFAULT b'0' AFTER `creditOverride`,
   CHANGE COLUMN `doenetId` `doenetId` VARCHAR(255) NOT NULL DEFAULT '' ,
   CHANGE COLUMN `numberOfAttemptsAllowedOverride` `numberOfAttemptsAllowedAdjustment` INT(11) NULL DEFAULT NULL ,
   CHANGE COLUMN `userId` `userId` CHAR(21) NOT NULL ,
@@ -309,9 +310,6 @@ $sql = "
   CHANGE COLUMN `doenetId` `doenetId` VARCHAR(255) NOT NULL DEFAULT '' ,
   DROP INDEX `userid-assignmentid-attemptnum` ,
   ADD UNIQUE INDEX `userid-doenetId-attemptNumber` (`userId` ASC, `doenetId` ASC, `attemptNumber` ASC);
-  ;
-  
-  
   ";
 
 $result = $conn->query($sql); 
@@ -321,11 +319,11 @@ $sql = "
   DROP COLUMN `generatedVariant`,
   DROP COLUMN `contentId`,
   CHANGE COLUMN `doenetId` `doenetId` VARCHAR(255) NOT NULL DEFAULT '' ;
-  
   ";
 
 $result = $conn->query($sql); 
 
+//TODO
 $sql = " 
   ALTER TABLE `user_assignment_attempt_item_submission` 
   DROP COLUMN `contentId`,

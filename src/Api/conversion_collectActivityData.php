@@ -15,7 +15,7 @@ INSERT INTO course (courseId, label, isPublic, isDeleted, image, color)
   FROM drive; 
 ";
 
-$result = $conn->query($sql);
+// $result = $conn->query($sql);
 
 $sql = "INSERT INTO course_content (type, courseId, doenetId, parentDoenetId, label, creationDate, isAssigned, isGloballyAssigned, sortOrder, jsonDefinition)
   SELECT 'section' AS type,
@@ -32,10 +32,10 @@ $sql = "INSERT INTO course_content (type, courseId, doenetId, parentDoenetId, la
   WHERE isDeleted=0 AND itemType='Folder'
   ";
 
-$result = $conn->query($sql);
+// $result = $conn->query($sql);
 
 $sql = "DROP TABLE IF EXISTS `activityToConvert`";
-$result = $conn->query($sql);
+// $result = $conn->query($sql);
 
 $sql = "CREATE TABLE `activityToConvert` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -52,7 +52,9 @@ $sql = "CREATE TABLE `activityToConvert` (
   `assignedPageOldCid` CHAR(64) NULL,
   PRIMARY KEY (`id`))
   ";
+
 $result = $conn->query($sql);
+var_dump($result);
 
 $sql = "SELECT concat('_', driveId) AS courseId, 
   doenetId AS subDoenetId,
@@ -104,7 +106,7 @@ while ($row = $result->fetch_assoc()) {
 
 
     $sql = "SELECT 
-      cid
+      contentId
       FROM content
       WHERE doenetId='$subDoenetId' AND removedFlag=0 AND isReleased=1
       ";
@@ -113,11 +115,11 @@ while ($row = $result->fetch_assoc()) {
 
     if ($result2->num_rows > 0) {
         $row2 = $result2->fetch_assoc();
-        $assignedPageOldCid = $row2["cid"];
+        $assignedPageOldCid = $row2["contentId"];
     }
 
     $sql = "SELECT 
-      cid
+      contentId
       FROM content
       WHERE doenetId='$subDoenetId' AND removedFlag=0 AND isDraft=1
       ";
@@ -126,7 +128,7 @@ while ($row = $result->fetch_assoc()) {
 
     if ($result2->num_rows > 0) {
         $row2 = $result2->fetch_assoc();
-        $draftPageOldCid = $row2["cid"];
+        $draftPageOldCid = $row2["contentId"];
     } else {
         die("Found page without a draft!!!!!");
     }

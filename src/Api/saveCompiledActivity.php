@@ -6,7 +6,7 @@ header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json");
 
 include "db_connection.php";
-include "permissionsAndSettingsForOneCourseFunction.php";
+// include "permissionsAndSettingsForOneCourseFunction.php";
 include "cidFromSHA.php";
 
 $jwtArray = include "jwtArray.php";
@@ -35,15 +35,15 @@ if ($success) {
     $doenetId = mysqli_real_escape_string($conn, $_POST["doenetId"]);
     $isAssigned = mysqli_real_escape_string($conn, $_POST["isAssigned"]);
     $dangerousActivityDoenetML = $_POST["activityDoenetML"];
-    $permissions = permissionsAndSettingsForOneCourseFunction(
-        $conn,
-        $userId,
-        $courseId
-    );
-    if ($permissions["canEditContent"] != "1") {
-        $success = false;
-        $message = "You need edit permission to add a page or order.";
-    }
+    // $permissions = permissionsAndSettingsForOneCourseFunction(
+    //     $conn,
+    //     $userId,
+    //     $courseId
+    // );
+    // if ($permissions["canEditContent"] != "1") {
+    //     $success = false;
+    //     $message = "You need edit permission to add a page or order.";
+    // }
 }
 
 if ($success) {
