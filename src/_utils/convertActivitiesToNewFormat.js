@@ -26,23 +26,66 @@ export async function convertActivitiesToNewFormat() {
       throw Error("couldn't save draft doenetML");
     }
 
+
+    let assignedPageCid;
+
     if (activityData.assignedPageOldCid) {
       const server = await axios.get(`/media/old/${activityData.assignedPageOldCid}.doenet`);
 
       let assignedDoenetML = server.data;
 
       const { data } = await axios.post("/api/saveDoenetML.php", {
-        doenetML: assignedDoenetML, 
+        doenetML: assignedDoenetML,
         saveAsCid: 1,
         pageId, courseId
       })
 
       if (!data.success) {
+        console.log( {
+          doenetML: assignedDoenetML,
+          saveAsCid: 1,
+          pageId, courseId
+        })
         console.error(data);
         throw Error("couldn't save assigned doenetML");
       }
 
+      assignedPageCid = data.cid;
+
+      // create assigned activity
+
+      let attributeString = ` xmlns="https://doenet.org/spec/doenetml/v0.1.0" type="activity" isSinglePage`
+
+      let orderIndentSpacing = "  ".repeat(1);
+      let pageIndentSpacing = "  ".repeat(2);
+      let pageML = `${pageIndentSpacing}<page cid="${assignedPageCid}" />\n`;
+
+      let childrenString = `${orderIndentSpacing}<order ${orderParameters}>\n${pageML}${orderIndentSpacing}</order>\n`;
+
+      let activityDoenetML = `<document${attributeString}>\n${childrenString}</document>`;
+
+      let resp = await axios.post('/api/saveCompiledActivity.php', {
+        courseId, doenetId: activityData.doenetId,
+        isAssigned: true,
+        activityDoenetML
+      });
+
+      if(!resp.data.success) {
+        console.log({
+          courseId, doenetId: activityData.doenetId,
+          isAssigned: true,
+          activityDoenetML
+        })
+        console.error(resp);
+        throw Error("couldn't save compiled activity");
+      }
+
+
+
+
     }
+
+
 
   }
 

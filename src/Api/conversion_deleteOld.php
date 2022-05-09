@@ -23,7 +23,6 @@ $sql = "
 
 $result = $conn->query($sql); 
 
-// TODO:  add constraint to Pages table
 
 
 $response_arr = array(

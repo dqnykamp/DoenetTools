@@ -74,7 +74,7 @@ while ($row = $result->fetch_assoc()) {
     $courseId = $row["courseId"];
     $subDoenetId = $row["subDoenetId"];
     $doenetId = "_" . $subDoenetId;
-    $parentDoenetId = $row["parentDoentId"];
+    $parentDoenetId = $row["parentDoenetId"];
     $label = $row["label"];
     $creationDate = $row["creationDate"];
     $isAssigned = $row["isAssigned"];
@@ -83,6 +83,19 @@ while ($row = $result->fetch_assoc()) {
 
     $pageId = include "randomId.php";
     $pageId = "_" . $pageId;
+  
+    $orderDoenetId = include "randomId.php";
+    $orderDoenetId = "_" . $orderDoenetId;
+  
+    $jsonDefinition = '{"type":"activity","version": "0.1.0","isSinglePage": true,"order":{"type":"order","doenetId":"'.$orderDoenetId.'","behavior":"sequence","content":["'.$pageId.'"]},"assignedCid":null,"draftCid":null,"itemWeights": [1],"files":[]}';
+  
+
+    $sql = "INSERT INTO course_content (type, courseId, doenetId, parentDoenetId, label, creationDate, isAssigned, isGloballyAssigned, sortOrder, jsonDefinition)
+        VALUES ('activity', '$courseId', '$doenetId', '$parentDoenetId', '$label', '$creationDate', '$isAssigned', '$isGloballyAssigned', '$sortOrder', '$jsonDefinition')
+        ";
+
+    $result2 = $conn->query($sql);
+
 
     $sql = "INSERT INTO pages (courseId, containingDoenetId, doenetId)
         VALUES ('$courseId', '$doenetId', '$pageId') ";
