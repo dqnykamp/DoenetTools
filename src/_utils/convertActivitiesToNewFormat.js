@@ -64,7 +64,7 @@ export async function convertActivitiesToNewFormat() {
       let pageIndentSpacing = "  ".repeat(2);
       let pageML = `${pageIndentSpacing}<page cid="${assignedPageCid}" />\n`;
 
-      let childrenString = `${orderIndentSpacing}<order ${orderParameters}>\n${pageML}${orderIndentSpacing}</order>\n`;
+      let childrenString = `${orderIndentSpacing}<order behavior="sequence">\n${pageML}${orderIndentSpacing}</order>\n`;
 
       let activityDoenetML = `<document${attributeString}>\n${childrenString}</document>`;
 

@@ -54,7 +54,7 @@ $sql = "CREATE TABLE `activityToConvert` (
   ";
 
 $result = $conn->query($sql);
-var_dump($result);
+// var_dump($result);
 
 $sql = "SELECT concat('_', driveId) AS courseId, 
   doenetId AS subDoenetId,
@@ -88,10 +88,43 @@ while ($row = $result->fetch_assoc()) {
   
     $orderDoenetId = include "randomId.php";
     $orderDoenetId = "_" . $orderDoenetId;
+
+    $activityData = [
+      "courseId" => $courseId,
+      "doenetId" => $doenetId,
+      "subDoenetId" => $subDoenetId,
+      "parentDoenetId" => $parentDoenetId,
+      "pageId" => $pageId,
+      "orderDoenetId" => $orderDoenetId,
+      "label" => $label,
+      "creationDate" => $creationDate,
+      "isAssigned" => $isAssigned,
+      "isGloballyAssigned" => $isGloballyAssigned,
+      "sortOrder" => $sortOrder,
+  ];
+
+  array_push($activitiesToConvert, $activityData);
+}
+$index = 1;
+foreach ($activitiesToConvert as $activityData){
+  echo "$index/n";
+  $index++;
+  $courseId = $activityData["courseId"];
+  $subDoenetId = $activityData["subDoenetId"];
+  $doenetId = "_" . $subDoenetId;
+  $parentDoenetId = $activityData["parentDoenetId"];
+  $label = $activityData["label"];
+  $creationDate = $activityData["creationDate"];
+  $isAssigned = $activityData["isAssigned"];
+  $isGloballyAssigned = $activityData["isGloballyAssigned"];
+  $sortOrder = $activityData["sortOrder"];
+  $pageId = $activityData["pageId"];
+  $orderDoenetId = $activityData["orderDoenetId"];
+
   
     $jsonDefinition = '{"type":"activity","version": "0.1.0","isSinglePage": true,"order":{"type":"order","doenetId":"'.$orderDoenetId.'","behavior":"sequence","content":["'.$pageId.'"]},"assignedCid":null,"draftCid":null,"itemWeights": [1],"files":[]}';
   
-
+    $label = mysqli_real_escape_string($conn, $label);
     $sql = "INSERT INTO course_content (type, courseId, doenetId, parentDoenetId, label, creationDate, isAssigned, isGloballyAssigned, sortOrder, jsonDefinition)
         VALUES ('activity', '$courseId', '$doenetId', '$parentDoenetId', '$label', '$creationDate', '$isAssigned', '$isGloballyAssigned', '$sortOrder', '$jsonDefinition')
         ";
@@ -112,6 +145,8 @@ while ($row = $result->fetch_assoc()) {
       ";
 
     $result2 = $conn->query($sql);
+
+    $assignedPageOldCid = null;
 
     if ($result2->num_rows > 0) {
         $row2 = $result2->fetch_assoc();
@@ -139,21 +174,7 @@ while ($row = $result->fetch_assoc()) {
 
     $result2 = $conn->query($sql);
 
-    $activityData = [
-        "courseId" => $courseId,
-        "doenetId" => $doenetId,
-        "parentDoenetId" => $parentDoenetId,
-        "pageId" => $pageId,
-        "label" => $label,
-        "creationDate" => $creationDate,
-        "isAssigned" => $isAssigned,
-        "isGloballyAssigned" => $isGloballyAssigned,
-        "sortOrder" => $sortOrder,
-        "draftPageOldCid" => $draftPageOldCid,
-        "assignedPageOldCid" => $assignedPageOldCid,
-    ];
-
-    array_push($activitiesToConvert, $activityData);
+    
 }
 
 $response_arr = [
