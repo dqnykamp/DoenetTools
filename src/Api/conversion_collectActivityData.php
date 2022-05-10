@@ -17,6 +17,30 @@ INSERT INTO course (courseId, label, isPublic, isDeleted, image, color)
 
 // $result = $conn->query($sql);
 
+$sql = "
+INSERT INTO course_user (userId,courseId,canViewCourse,canViewContentSource,canEditContent,canPublishContent,canViewUnassignedContent,canProctor,canViewAndModifyGrades,canViewActivitySettings,canModifyCourseSettings,canViewUsers,canManageUsers,canModifyRoles,isOwner,roleLabels)
+SELECT 
+userId,
+CONCAT('_',driveId) AS courseId,
+1 AS canViewCourse,
+1 AS canViewContentSource,
+1 AS canEditContent,
+1 AS canPublishContent,
+1 AS canViewUnassignedContent,
+1 AS canProctor,
+1 AS canViewAndModifyGrades,
+1 AS canViewActivitySettings,
+1 AS canModifyCourseSettings,
+1 AS canViewUsers,
+1 AS canManageUsers,
+1 AS canModifyRoles,
+1 AS isOwner,
+'[\"Owner\"]' AS roleLabels
+FROM drive_user
+WHERE role = 'Owner'
+";
+// $result = $conn->query($sql);
+
 $sql = "INSERT INTO course_content (type, courseId, doenetId, parentDoenetId, label, creationDate, isAssigned, isGloballyAssigned, sortOrder, jsonDefinition)
   SELECT 'section' AS type,
   concat('_', driveId) AS courseId, 
@@ -32,7 +56,7 @@ $sql = "INSERT INTO course_content (type, courseId, doenetId, parentDoenetId, la
   WHERE isDeleted=0 AND itemType='Folder'
   ";
 
-// $result = $conn->query($sql);
+$result = $conn->query($sql);
 
 $sql = "DROP TABLE IF EXISTS `activityToConvert`";
 // $result = $conn->query($sql);
@@ -107,7 +131,7 @@ while ($row = $result->fetch_assoc()) {
 }
 $index = 1;
 foreach ($activitiesToConvert as $activityData){
-  echo "$index/n";
+  echo "$index\n";
   $index++;
   $courseId = $activityData["courseId"];
   $subDoenetId = $activityData["subDoenetId"];

@@ -8,13 +8,18 @@ export async function convertActivitiesToNewFormat() {
   console.log("data", data);
 
   for (let activityData of data.activitiesToConvert) {
-    console.log("Need to convert", activityData);
+    // console.log("Need to convert", activityData);
 
     let pageId = activityData.pageId;
     let courseId = activityData.courseId;
+    let server;
+    try {
 
-
-    const server = await axios.get(`/media/old/${activityData.draftPageOldCid}.doenet`);
+      server = await axios.get(`/media/old/${activityData.draftPageOldCid}.doenet`);
+    }catch(e){
+      console.log("PROBLEM 1!!!",e,activityData.doenetId);
+      continue;
+    }
 
     let draftDoenetML = server.data;
     // console.log("draft server",server)
@@ -31,8 +36,14 @@ export async function convertActivitiesToNewFormat() {
     let assignedPageCid;
 
     if (activityData.assignedPageOldCid) {
-      const server = await axios.get(`/media/old/${activityData.assignedPageOldCid}.doenet`);
-    console.log("activity server",server)
+      let server;
+      try{
+      server = await axios.get(`/media/old/${activityData.assignedPageOldCid}.doenet`);
+      }catch(e){
+        console.log("PROBLEM 2!!!",e,activityData.doenetId);
+        continue;
+      }
+    // console.log("activity server",server)
 
       let assignedDoenetML = server.data;
 
@@ -42,7 +53,7 @@ export async function convertActivitiesToNewFormat() {
         pageId, courseId
       })
 
-    console.log("activitydata",data)
+    // console.log("activitydata",data)
 
       if (!data.success) {
         console.log( {
