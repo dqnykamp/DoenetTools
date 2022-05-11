@@ -15,7 +15,7 @@ INSERT INTO course (courseId, label, isPublic, isDeleted, image, color)
   FROM drive; 
 ";
 
-// $result = $conn->query($sql);
+$result = $conn->query($sql);
 
 $sql = "
 INSERT INTO course_user (userId,courseId,canViewCourse,canViewContentSource,canEditContent,canPublishContent,canViewUnassignedContent,canProctor,canViewAndModifyGrades,canViewActivitySettings,canModifyCourseSettings,canViewUsers,canManageUsers,canModifyRoles,isOwner,roleLabels)
@@ -200,6 +200,37 @@ foreach ($activitiesToConvert as $activityData){
 
     
 }
+
+$sql = "
+SELECT *
+FROM course_content AS cc
+WHERE cc.parentDoenetId NOT IN (
+SELECT cc2.doenetId 
+FROM course_content AS cc2 
+WHERE cc2.doenetId = cc.parentDoenetId)
+AND cc.parentDoenetId != cc.courseId
+";
+// $result = $conn->query($sql);
+
+//Run this five times
+$sql = "
+DELETE FROM course_content 
+WHERE doenetId IN 
+(SELECT doenetId FROM
+(SELECT cc.doenetId
+FROM course_content AS cc
+WHERE cc.parentDoenetId NOT IN (
+SELECT cc2.doenetId 
+FROM course_content AS cc2 
+WHERE cc2.doenetId = cc.parentDoenetId)
+AND cc.parentDoenetId != cc.courseId)
+x)
+";
+$result = $conn->query($sql);
+$result = $conn->query($sql);
+$result = $conn->query($sql);
+$result = $conn->query($sql);
+$result = $conn->query($sql);
 
 $response_arr = [
     "success" => $success,

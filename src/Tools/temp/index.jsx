@@ -43,7 +43,6 @@ async function updateSortOrder(){
 
   let doenetId_to_sortOrder = {}
   for(let courseId of data.courseIds.slice(1)){
-  console.log("courseId", courseId);
     let itemsInCourse = data.items_in_order.filter((itemObj)=>{
     // console.log("itemObj",itemObj.courseId,itemObj.courseId == courseId)
     return itemObj.courseId == courseId
@@ -53,7 +52,7 @@ async function updateSortOrder(){
     let so = getSortOrder({parentDoenetId:courseId,itemsInCourse})
     Object.assign(doenetId_to_sortOrder,so.doenetId_to_sortOrder);
   }
-  console.log("doenetId_to_sortOrder",doenetId_to_sortOrder)
+  // console.log("doenetId_to_sortOrder",doenetId_to_sortOrder)
   const { data:data2 } = await axios.post('/api/conversion_setSortOrder.php', { doenetId_to_sortOrder });
   console.log("data",data2)
 }
