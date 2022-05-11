@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { toastType, useToast } from '@Toast';
 import axios from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
-import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilValue, useSetRecoilState, atom } from 'recoil';
 import styled from 'styled-components';
 import {
   authorItemByDoenetId,
@@ -79,6 +79,7 @@ export default function SelectedActivity() {
     label: recoilLabel,
     order,
     assignedCid,
+    isAssigned,
     parentDoenetId
   } = useRecoilValue(authorItemByDoenetId(doenetId));
   const courseId = useRecoilValue(searchParamAtomFamily('courseId'));
@@ -87,12 +88,11 @@ export default function SelectedActivity() {
     create,
     compileActivity,
     deleteItem,
+    updateAssignItem
   } = useCourse(courseId);
 
   const [itemTextFieldLabel, setItemTextFieldLabel] = useState(recoilLabel);
   const addToast = useToast();
-
-
 
   useEffect(() => {
     setItemTextFieldLabel(recoilLabel);
@@ -135,7 +135,7 @@ export default function SelectedActivity() {
         {heading}
         <ActionButton
           width="menu"
-          value="Take Assignment"
+          value="View Activity"
           onClick={() => {
             setPageToolView({
               page: 'course',
@@ -153,7 +153,8 @@ export default function SelectedActivity() {
   }
 
   let assignActivityText = 'Assign Activity';
-  if (assignedCid != null) {
+  if (isAssigned) {
+    // if (assignedCid != null) {
     assignActivityText = 'Update Assigned Activity';
   }
 
@@ -221,6 +222,7 @@ export default function SelectedActivity() {
         />
       </ActionButtonGroup>
       <br />
+      <ActionButtonGroup vertical>
 
       <ActionButton
         width="menu"
@@ -230,12 +232,37 @@ export default function SelectedActivity() {
             activityDoenetId: doenetId,
             isAssigned: true,
             courseId,
-            successCallback: () => {
-              addToast('Activity Assigned.', toastType.INFO);
-            },
+            // successCallback: () => {
+            //   addToast('Activity Assigned.', toastType.INFO);
+            // },
           });
+          updateAssignItem({
+            doenetId,
+            isAssigned:true,
+            successCallback: () => {
+              addToast("Activity Assigned", toastType.INFO);
+            },
+          })
         }}
       />
+      {isAssigned ? 
+      <ActionButton
+        width="menu"
+        value="Unassign Activity"
+        alert
+        onClick={() => {
+          updateAssignItem({
+            doenetId,
+            isAssigned:false,
+            successCallback: () => {
+              addToast("Activity Unassigned", toastType.INFO);
+            },
+          })
+        
+        }}
+      />
+      : null}
+      </ActionButtonGroup>
      
   
       <Textfield
@@ -280,6 +307,12 @@ export default function SelectedActivity() {
   );
 }
 
+//TODO: Emilio
+const temporaryRestrictToAtom = atom({
+  key:"temporaryRestrictToAtom",
+  default:[]
+})
+
 function AssignTo({updateAssignment}){
   const doenetId = useRecoilValue(selectedCourseItems)[0];
   const {
@@ -289,10 +322,37 @@ function AssignTo({updateAssignment}){
 
   const {value:enrolledStudents} = useRecoilValue(enrollmentByCourseId(courseId))
 
+  //email addresses of only those who assignment is restricted to
+  const [restrictedTo,setRestrictedTo] = useState([]);
+
+  async function getAndSetRestrictedTo({courseId,doenetId}){
+    let resp = await axios.get('/api/getRestrictedTo.php',{params:{courseId,doenetId}})
+    // console.log("resp",resp.data)
+    setRestrictedTo(resp.data.restrictedTo)
+  }
+
+  async function updateRestrictedTo({courseId,doenetId,emailAddresses}){
+
+    let resp = await axios.post('/api/updateRestrictedTo.php',{courseId,doenetId,emailAddresses})
+    // console.log("resp",resp.data)
+    setRestrictedTo(emailAddresses)
+  }
+
+  useEffect(()=>{
+    if (!isGloballyAssigned){
+      getAndSetRestrictedTo({courseId,doenetId})
+    }
+  },[doenetId,isGloballyAssigned])
+
+
   //Only those enrolled who didn't withdraw
   let enrolledJSX = enrolledStudents.reduce((allrows,row)=>{
     if (row.withdrew == '0'){
-      return [...allrows,<option key={`enrolledOpt${row.email}`} value={row.email}>{row.firstName} {row.lastName}</option>]
+      if (!isGloballyAssigned && restrictedTo.includes(row.email)){
+        return [...allrows,<option selected key={`enrolledOpt${row.email}`} value={row.email}>{row.firstName} {row.lastName}</option>]
+      }else{
+        return [...allrows,<option key={`enrolledOpt${row.email}`} value={row.email}>{row.firstName} {row.lastName}</option>]
+      }
     }else{
       return allrows
     }
@@ -324,9 +384,11 @@ function AssignTo({updateAssignment}){
             options={enrolledJSX}
             disabled={isGloballyAssigned}
             onChange={(e)=>{
-              //TODO: Clara please build this in
-              let values = Array.from(e.target.selectedOptions, option => option.value);
-              console.log("values",values)
+              //TODO: Clara please build this in to RelatedItems
+              let emailAddresses = Array.from(e.target.selectedOptions, option => option.value);
+
+              updateRestrictedTo({courseId,doenetId,emailAddresses})
+              
             }}
             multiple
           />

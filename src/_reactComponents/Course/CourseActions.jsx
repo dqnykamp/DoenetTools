@@ -11,7 +11,7 @@ import {
 import { searchParamAtomFamily } from '../../Tools/_framework/NewToolRoot';
 import { selectedMenuPanelAtom } from '../../Tools/_framework/Panels/NewMenuPanel';
 import { useToast, toastType } from '../../Tools/_framework/Toast';
-import { fileByDoenetId, fileByCid } from '../../Tools/_framework/ToolHandlers/CourseToolHandler';
+import { fileByPageId, fileByCid } from '../../Tools/_framework/ToolHandlers/CourseToolHandler';
 import { UTCDateStringToDate } from '../../_utils/dateUtilityFunction';
 
 const enrollmentAtomByCourseId = atomFamily({
@@ -260,8 +260,8 @@ export function useInitCourseItems(courseId) {
            params: { courseId },
           });
           //DoenetIds depth first search and going into json structures
-          //TODO: organize by section
-          
+          // console.log("data",data)
+          //TODO: make more efficent for student only view
           let pageDoenetIdToParentDoenetId = {};
           let doenetIds = data.items.reduce((items,item)=>{
             if (item.type !== 'page'){
@@ -281,7 +281,6 @@ export function useInitCourseItems(courseId) {
             }else if (item.type === 'page'){
               item['parentDoenetId'] = pageDoenetIdToParentDoenetId[item.doenetId];
             }
-            
             //Store activity, bank and page information
             set(authorItemByDoenetId(item.doenetId), localizeDates(item, dateKeys));
 
@@ -366,6 +365,20 @@ export const authorCourseItemOrderByCourseIdBySection = selectorFamily({
       }
     }
     return sectionDoenetIds;
+  }
+})
+
+export const studentCourseItemOrderByCourseId = selectorFamily({
+  key: 'studentCourseItemOrderByCourseId',
+  get:(courseId)=> ({get})=>{
+    let allDoenetIdsInOrder = get(authorCourseItemOrderByCourseId(courseId));
+    let studentDoenetIds = allDoenetIdsInOrder.filter((doenetId)=>{
+      let itemObj = get(authorItemByDoenetId(doenetId));
+      //If of type for the student then add to the list
+      return itemObj.type == 'activity' || itemObj.type == 'section'
+    })
+
+    return studentDoenetIds;
   }
 })
 
@@ -1192,6 +1205,31 @@ export const useCourse = (courseId) => {
 [courseId, defaultFailure],
 );
 
+const updateAssignItem = useRecoilCallback(
+  ({ set }) =>
+    async ({ doenetId, isAssigned, successCallback, failureCallback = defaultFailure }) => {
+      try {
+
+      let resp = await axios.get('/api/updateIsAssignedOnAnItem.php', {params:{ courseId,doenetId,isAssigned } });
+      // console.log("resp.data",resp.data)
+      if (resp.status < 300) {
+        // let isAssigned = resp.data.isAssigned;
+
+        set(authorItemByDoenetId(doenetId),(prev)=>{
+          let next = {...prev}
+          next.isAssigned = isAssigned;
+          return next
+        });
+        
+        successCallback?.();
+      } else {
+        throw new Error(`response code: ${resp.status}`);
+      }
+      } catch (err) {
+      failureCallback(err);
+      }
+    },[courseId,defaultFailure]);
+
   const compileActivity = useRecoilCallback(
     ({ set, snapshot }) =>
       async ({ activityDoenetId, successCallback, isAssigned = false, courseId, failureCallback = defaultFailure }) => {
@@ -1225,7 +1263,7 @@ export const useCourse = (courseId) => {
         async function pageToDoenetML({ pageDoenetId, indentLevel = 1 }) {
           let indentSpacing = "  ".repeat(indentLevel);
 
-          let pageDoenetML = (await snapshot.getPromise(fileByDoenetId(pageDoenetId)));
+          let pageDoenetML = (await snapshot.getPromise(fileByPageId(pageDoenetId)));
 
           let params = {
             doenetML: pageDoenetML,
@@ -1266,9 +1304,11 @@ export const useCourse = (courseId) => {
           attributeString += ` isSinglePage`;
         }
 
-        let childrenString;
+        let childrenString ="";
         try {
-          childrenString = await orderToDoenetML({ order: activity.order });
+          childrenString = (await Promise.all(activity.order.content
+            .map(x => contentToDoenetML({ content: x, indentLevel: 1 }))))
+            .join("");
         } catch (err) {
           failureCallback(err);
         }
@@ -2126,6 +2166,7 @@ export const useCourse = (courseId) => {
     image, 
     renameItem, 
     compileActivity, 
+    updateAssignItem,
     updateOrderBehavior, 
     copyItems, 
     cutItems,
