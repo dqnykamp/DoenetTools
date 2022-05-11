@@ -71,13 +71,10 @@ export async function convertActivitiesToNewFormat() {
 
       let attributeString = ` xmlns="https://doenet.org/spec/doenetml/v0.1.0" type="activity" isSinglePage`
 
-      let orderIndentSpacing = "  ".repeat(1);
-      let pageIndentSpacing = "  ".repeat(2);
+      let pageIndentSpacing = "  ".repeat(1);
       let pageML = `${pageIndentSpacing}<page cid="${assignedPageCid}" />\n`;
 
-      let childrenString = `${orderIndentSpacing}<order behavior="sequence">\n${pageML}${orderIndentSpacing}</order>\n`;
-
-      let activityDoenetML = `<document${attributeString}>\n${childrenString}</document>`;
+      let activityDoenetML = `<document${attributeString}>\n${pageML}</document>`;
 
       let resp = await axios.post('/api/saveCompiledActivity.php', {
         courseId, doenetId: activityData.doenetId,
