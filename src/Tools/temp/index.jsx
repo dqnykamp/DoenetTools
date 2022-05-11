@@ -7,6 +7,7 @@ import { returnAllPossibleVariants } from '../../Core/utils/returnAllPossibleVar
 import RelatedItems from '../../_reactComponents/PanelHeaderComponents/RelatedItems';
 import axios from 'axios';
 import { convertActivitiesToNewFormat } from '../../_utils/convertActivitiesToNewFormat';
+import { numberToLetters } from '../../Core/utils/sequence';
 
 // serializeFunctions.expandDoenetMLsToFullSerializedComponents({
 //     contentIds: [],
@@ -19,24 +20,55 @@ import { convertActivitiesToNewFormat } from '../../_utils/convertActivitiesToNe
 //     flags,
 //     contentIdsToDoenetMLs
 // })
+async function updateSortOrder(){
+ 
+  const { data } = await axios.get('/api/conversion_getSortOrder.php', {
+    params: {},
+  });
+
+  function getSortOrder({parentDoenetId,startInd=0,itemsInCourse}){
+    let doenetId_to_sortOrder = {}
+    let ind = startInd;
+    for (let item of itemsInCourse){
+      if (item.parentDoenetId == parentDoenetId){
+        doenetId_to_sortOrder[item.doenetId] = numberToLetters(27+ind).toLowerCase();
+        ind++;
+        let result = getSortOrder({parentDoenetId:item.doenetId,startInd:ind,itemsInCourse})
+        ind = result.endInd;
+        Object.assign(doenetId_to_sortOrder,result.doenetId_to_sortOrder)
+      }
+    }
+    return {doenetId_to_sortOrder,endInd:ind};
+  }
+
+  let doenetId_to_sortOrder = {}
+  for(let courseId of data.courseIds.slice(1)){
+  console.log("courseId", courseId);
+    let itemsInCourse = data.items_in_order.filter((itemObj)=>{
+    // console.log("itemObj",itemObj.courseId,itemObj.courseId == courseId)
+    return itemObj.courseId == courseId
+    })
+
+    // console.log("itemsInCourse",itemsInCourse,itemsInCourse.length)
+    let so = getSortOrder({parentDoenetId:courseId,itemsInCourse})
+    Object.assign(doenetId_to_sortOrder,so.doenetId_to_sortOrder);
+  }
+  console.log("doenetId_to_sortOrder",doenetId_to_sortOrder)
+  const { data:data2 } = await axios.post('/api/conversion_setSortOrder.php', { doenetId_to_sortOrder });
+  console.log("data",data2)
+}
+
 
 ReactDOM.render(
-  // <RelatedItems 
-  //   width="100px" 
-  //   size="8"
-  //   options={
-  //     [
-  //       <option value='Keagan'>Keagan</option>,
-  //       <option value='Keagan'>Keagan</option>,
-  //       <option value='Keagan'>Keagan</option>
-  //     ]
-  //   }
-  //   onChange={(data) => console.log(data)}
-  //   onBlur={(e) => console.log(e.target.value)}
-  //   disabled
-  // >
-  // </RelatedItems>,
-  <button onClick={convertActivitiesToNewFormat}>run script</button>,
+  <>
+  <button onClick={convertActivitiesToNewFormat}>run script</button>
+  <br />
+  <br />
+  <br />
+  <br />
+  <button onClick={updateSortOrder}>update sortOrder</button>
+
+  </>,
   document.getElementById('root'),
 );
 
