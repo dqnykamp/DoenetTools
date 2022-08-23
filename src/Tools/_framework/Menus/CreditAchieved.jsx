@@ -42,32 +42,42 @@ export default function CreditAchieved() {
 
   const { creditByItem, creditForAttempt, creditForAssignment, totalPointsOrPercent } = useRecoilValue(creditAchievedAtom);
 
+  console.log({
+    recoilAttemptNumber, recoilDoenetId, recoilUserId, recoilTool,
+    lastAttemptNumber: lastAttemptNumber.current, activityAttemptNumberSetUp, currentPage, itemWeights, creditByItem, creditForAttempt, creditForAssignment, totalPointsOrPercent
+  })
+
 
   const initialize = useRecoilCallback(({ set }) => async (attemptNumber, doenetId, userId, tool) => {
 
 
+    console.log('calling loadAssessmentCreditAchieved.php', { attemptNumber, doenetId, userId, tool })
+
     const { data } = await axios.get(`api/loadAssessmentCreditAchieved.php`, { params: { attemptNumber, doenetId, userId, tool } });
 
-    const creditByItem = data.creditByItem.map(Number);
-    const creditForAssignment = Number(data.creditForAssignment)
-    const creditForAttempt = Number(data.creditForAttempt)
+    console.log('data from load assessment credit achieved', data)
+
+    const newCreditByItem = data.creditByItem.map(Number);
+    const newCreditForAssignment = Number(data.creditForAssignment)
+    const newCreditForAttempt = Number(data.creditForAttempt)
     const showCorrectness = data.showCorrectness === "1";
-    const totalPointsOrPercent = Number(data.totalPointsOrPercent)
+    const newTotalPointsOrPercent = Number(data.totalPointsOrPercent)
+
+    lastAttemptNumber.current = attemptNumber;
 
     if (!showCorrectness && tool.substring(0, 9) !== 'gradebook') {
       setDisabled(true);
     } else {
       set(creditAchievedAtom, (was) => {
         let newObj = { ...was };
-        newObj.creditByItem = creditByItem;
-        newObj.creditForAssignment = creditForAssignment;
-        newObj.creditForAttempt = creditForAttempt;
-        newObj.totalPointsOrPercent = totalPointsOrPercent;
+        newObj.creditByItem = newCreditByItem;
+        newObj.creditForAssignment = newCreditForAssignment;
+        newObj.creditForAttempt = newCreditForAttempt;
+        newObj.totalPointsOrPercent = newTotalPointsOrPercent;
         return newObj;
       })
     }
 
-    lastAttemptNumber.current = attemptNumber;
 
   }, [])
 
@@ -83,6 +93,8 @@ export default function CreditAchieved() {
     lastAttemptNumber.current = activityAttemptNumberSetUp;
     return null;
   }
+
+  console.log(`recoilAttemptNumber: ${recoilAttemptNumber}, latestAttemptNumber: ${lastAttemptNumber.current}`)
 
   if (lastAttemptNumber.current !== recoilAttemptNumber) {
     initialize(recoilAttemptNumber, recoilDoenetId, recoilUserId, recoilTool);
