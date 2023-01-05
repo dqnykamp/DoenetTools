@@ -1,4 +1,4 @@
-import { prng_alea } from "esm-seedrandom";
+import { prng_alea } from "../Core/esm-seeded";
 import { retrieveTextFileForCid } from "../Core/utils/retrieveTextFile";
 import { returnAllPossibleVariants } from "../Core/utils/returnAllPossibleVariants";
 import { parseAndCompile } from "../Parser/parser";

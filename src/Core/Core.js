@@ -1,7 +1,8 @@
 import readOnlyProxyHandler from './ReadOnlyProxyHandler';
 import ParameterStack from './ParameterStack';
 import Numerics from './Numerics';
-import { prng_alea } from 'esm-seedrandom';
+// import { prng_alea } from 'esm-seedrandom';
+import { prng_alea } from "./esm-seeded";
 import me from 'math-expressions';
 import { createUniqueName, getNamespaceFromName } from './utils/naming';
 import * as serializeFunctions from './utils/serializedStateProcessing';
@@ -24,6 +25,12 @@ import { gatherVariantComponents, getNumberOfVariants } from './utils/variants';
 // string to componentClass: this.componentInfoObjects.allComponentClasses["string"]
 // componentClass to string: componentClass.componentType
 
+try {
+  postMessage;
+} catch(e) {
+  var postMessage = function () {};
+}
+
 export default class Core {
   constructor({ doenetML, doenetId, activityCid, pageNumber, attemptNumber = 1, itemNumber = 1,
     serverSaveId,
@@ -36,6 +43,7 @@ export default class Core {
     coreId, updateDataOnContentChange }) {
     // console.time('core');
 
+    console.time('initial')
 
     this.coreId = coreId;
     this.doenetId = doenetId;
@@ -142,8 +150,8 @@ export default class Core {
         }))
       .then(this.finishCoreConstruction)
       .catch(e => {
-        // throw e;
-        postMessage({
+        throw e;
+        postMessage?.({
           messageType: "inErrorState",
           coreId: this.coreId,
           args: { errMsg: e.message }
@@ -177,7 +185,7 @@ export default class Core {
 
     this.componentRangePieces = rangePieces;
 
-    postMessage({
+    postMessage?.({
       messageType: "componentRangePieces",
       coreId: this.coreId,
       args: {
@@ -291,10 +299,14 @@ export default class Core {
 
     // this.changedStateVariables = {};
 
+    console.log('before add components', JSON.parse(JSON.stringify(serializedComponents)));
+
     await this.addComponents({
       serializedComponents,
       initialAdd: true,
     })
+
+    console.timeEnd('initial');
 
     this.updateInfo.componentsToUpdateRenderers = [];
 
@@ -330,6 +342,8 @@ export default class Core {
     this.messageViewerReady()
 
     this.resolveInitialized();
+
+    console.log('finish constructing core');
 
 
   }
@@ -379,7 +393,7 @@ export default class Core {
 
   async messageViewerReady() {
 
-    postMessage({
+    postMessage?.({
       messageType: "initializeRenderers",
       coreId: this.coreId,
       args: {
@@ -387,7 +401,7 @@ export default class Core {
       }
     });
 
-    postMessage({
+    postMessage?.({
       messageType: "coreCreated",
       coreId: this.coreId
     });
@@ -396,7 +410,7 @@ export default class Core {
 
   async postUpdateRenderers(args, init = false) {
 
-    postMessage({
+    postMessage?.({
       messageType: "updateRenderers",
       coreId: this.coreId,
       args,
@@ -8152,7 +8166,7 @@ export default class Core {
 
   resolveAction({ actionId }) {
     if (actionId) {
-      postMessage({
+      postMessage?.({
         messageType: "resolveAction",
         coreId: this.coreId,
         args: { actionId }
@@ -8584,7 +8598,7 @@ export default class Core {
       // console.log(">>>>resp from record event", resp.data)
     } catch (e) {
       console.error(`Error saving event: ${e.message}`);
-      // postMessage({
+      // postMessage?.({
       //   messageType: "sendToast",
       //   coreId: this.coreId,
       //   args: {
@@ -9731,7 +9745,7 @@ export default class Core {
       )
     }
 
-    postMessage({
+    postMessage?.({
       messageType: "savedState",
       coreId: this.coreId,
     })
@@ -9791,7 +9805,7 @@ export default class Core {
     // TODO: find out how to test if not online
     // and send this toast if not online:
 
-    // postMessage({
+    // postMessage?.({
     //   messageType: "sendToast",
     //   coreId: this.coreId,
     //   args: {
@@ -9805,7 +9819,7 @@ export default class Core {
     try {
       resp = await axios.post('/api/savePageState.php', this.pageStateToBeSavedToDatabase);
     } catch (e) {
-      postMessage({
+      postMessage?.({
         messageType: "sendToast",
         coreId: this.coreId,
         args: {
@@ -9819,7 +9833,7 @@ export default class Core {
     console.log('result from saving to database:', resp.data);
 
     if (resp.status === null) {
-      postMessage({
+      postMessage?.({
         messageType: "sendToast",
         coreId: this.coreId,
         args: {
@@ -9833,7 +9847,7 @@ export default class Core {
     let data = resp.data;
 
     if (!data.success) {
-      postMessage({
+      postMessage?.({
         messageType: "sendToast",
         coreId: this.coreId,
         args: {
@@ -9871,7 +9885,7 @@ export default class Core {
           )
         }
 
-        postMessage({
+        postMessage?.({
           messageType: "resetPage",
           coreId: this.coreId,
           args: {
@@ -9882,7 +9896,7 @@ export default class Core {
         })
       } else {
         // if the cid changed without the attemptNumber changing, something went wrong
-        postMessage({
+        postMessage?.({
           messageType: "inErrorState",
           coreId: this.coreId,
           args: {
@@ -9921,7 +9935,7 @@ export default class Core {
         // console.log('>>>>saveCreditForItem resp', resp.data);
 
         if (resp.status === null) {
-          postMessage({
+          postMessage?.({
             messageType: "sendToast",
             coreId: this.coreId,
             args: {
@@ -9930,7 +9944,7 @@ export default class Core {
             }
           })
         } else if (!resp.data.success) {
-          postMessage({
+          postMessage?.({
             messageType: "sendToast",
             coreId: this.coreId,
             args: {
@@ -9942,7 +9956,7 @@ export default class Core {
 
           let data = resp.data;
 
-          postMessage({
+          postMessage?.({
             messageType: "updateCreditAchieved",
             coreId: this.coreId,
             args: {
@@ -9957,7 +9971,7 @@ export default class Core {
           //TODO: need type warning (red but doesn't hang around)
           if (data.viewedSolution) {
             if (!suppressToast) {
-              postMessage({
+              postMessage?.({
                 messageType: "sendToast",
                 coreId: this.coreId,
                 args: {
@@ -9969,7 +9983,7 @@ export default class Core {
           }
           if (data.timeExpired) {
             if (!suppressToast) {
-              postMessage({
+              postMessage?.({
                 messageType: "sendToast",
                 coreId: this.coreId,
                 args: {
@@ -9981,7 +9995,7 @@ export default class Core {
           }
           if (data.pastDueDate) {
             if (!suppressToast) {
-              postMessage({
+              postMessage?.({
                 messageType: "sendToast",
                 coreId: this.coreId,
                 args: {
@@ -9993,7 +10007,7 @@ export default class Core {
           }
           if (data.exceededAttemptsAllowed) {
             if (!suppressToast) {
-              postMessage({
+              postMessage?.({
                 messageType: "sendToast",
                 coreId: this.coreId,
                 args: {
@@ -10004,7 +10018,7 @@ export default class Core {
             }
           }
           if (data.databaseError) {
-            postMessage({
+            postMessage?.({
               messageType: "sendToast",
               coreId: this.coreId,
               args: {
@@ -10016,7 +10030,7 @@ export default class Core {
         }
       })
       .catch(e => {
-        postMessage({
+        postMessage?.({
           messageType: "sendToast",
           coreId: this.coreId,
           args: {
@@ -10158,7 +10172,7 @@ export default class Core {
 
       if (resp.status === null) {
         let message = `Cannot show solution due to error.  Are you connected to the internet?`;
-        postMessage({
+        postMessage?.({
           messageType: "sendToast",
           coreId: this.coreId,
           args: {
@@ -10180,7 +10194,7 @@ export default class Core {
     } catch (e) {
       let message = `Cannot show solution due to error.`;
 
-      postMessage({
+      postMessage?.({
         messageType: "sendToast",
         coreId: this.coreId,
         args: {
@@ -10202,7 +10216,7 @@ export default class Core {
   }
 
   requestAnimationFrame(args) {
-    postMessage({
+    postMessage?.({
       messageType: "requestAnimationFrame",
       coreId: this.coreId,
       args
@@ -10210,7 +10224,7 @@ export default class Core {
   }
 
   cancelAnimationFrame(args) {
-    postMessage({
+    postMessage?.({
       messageType: "cancelAnimationFrame",
       coreId: this.coreId,
       args

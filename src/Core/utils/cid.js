@@ -1,5 +1,5 @@
 import base32 from 'hi-base32';
-
+import  { subtle }  from 'node:crypto';
 
 export async function cidFromText(text) {
 
@@ -12,7 +12,7 @@ export async function cidFromText(text) {
 
 export async function cidFromArrayBuffer(data) {
 
-  let hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  let hashBuffer = await subtle.digest("SHA-256", data);
 
   let cidArray = new Uint8Array(36);
 
