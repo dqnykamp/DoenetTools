@@ -17,35 +17,35 @@ export default class Text extends InlineComponent {
   static createAttributesObject() {
     let attributes = super.createAttributesObject();
 
-    attributes.draggable = {
-      createComponentOfType: "boolean",
-      createStateVariable: "draggable",
-      defaultValue: true,
-      public: true,
-      forRenderer: true
-    };
+    // attributes.draggable = {
+    //   createComponentOfType: "boolean",
+    //   createStateVariable: "draggable",
+    //   defaultValue: true,
+    //   public: true,
+    //   forRenderer: true
+    // };
 
-    attributes.layer = {
-      createComponentOfType: "number",
-      createStateVariable: "layer",
-      defaultValue: 0,
-      public: true,
-      forRenderer: true
-    };
+    // attributes.layer = {
+    //   createComponentOfType: "number",
+    //   createStateVariable: "layer",
+    //   defaultValue: 0,
+    //   public: true,
+    //   forRenderer: true
+    // };
 
-    attributes.anchor = {
-      createComponentOfType: "point",
-    }
+    // attributes.anchor = {
+    //   createComponentOfType: "point",
+    // }
 
-    attributes.positionFromAnchor = {
-      createComponentOfType: "text",
-      createStateVariable: "positionFromAnchor",
-      defaultValue: "center",
-      public: true,
-      forRenderer: true,
-      toLowerCase: true,
-      validValues: ["upperright", "upperleft", "lowerright", "lowerleft", "top", "bottom", "left", "right", "center"]
-    }
+    // attributes.positionFromAnchor = {
+    //   createComponentOfType: "text",
+    //   createStateVariable: "positionFromAnchor",
+    //   defaultValue: "center",
+    //   public: true,
+    //   forRenderer: true,
+    //   toLowerCase: true,
+    //   validValues: ["upperright", "upperleft", "lowerright", "lowerleft", "top", "bottom", "left", "right", "center"]
+    // }
 
     attributes.styleNumber.defaultValue = 0;
 
@@ -58,7 +58,7 @@ export default class Text extends InlineComponent {
 
     return [{
       group: "textLike",
-      componentTypes: ["string", "text", "_singleCharacterInline", "_inlineRenderInlineChildren"]
+      componentTypes: ["string", "text"]
     }]
 
   }
@@ -68,9 +68,9 @@ export default class Text extends InlineComponent {
 
     let stateVariableDefinitions = super.returnStateVariableDefinitions();
 
-    let selectedStyleDefinition = returnSelectedStyleStateVariableDefinition();
+    // let selectedStyleDefinition = returnSelectedStyleStateVariableDefinition();
 
-    Object.assign(stateVariableDefinitions, selectedStyleDefinition);
+    // Object.assign(stateVariableDefinitions, selectedStyleDefinition);
 
     stateVariableDefinitions.value = {
       public: true,
@@ -81,11 +81,11 @@ export default class Text extends InlineComponent {
         // is that a sequence creates a text where it sets fixed directly in the state
         // TODO: how to deal with this in general?  Should we disallow that way to set state?
         // Or should we always shadow attributes this way?
-        addAttributeComponentsShadowingStateVariables: {
-          fixed: {
-            stateVariableToShadow: "fixed",
-          }
-        },
+        // addAttributeComponentsShadowingStateVariables: {
+        //   fixed: {
+        //     stateVariableToShadow: "fixed",
+        //   }
+        // },
       },
       hasEssential: true,
       returnDependencies: () => ({
@@ -167,56 +167,56 @@ export default class Text extends InlineComponent {
 
     }
 
-    stateVariableDefinitions.anchor = {
-      defaultValue: me.fromText("(0,0)"),
-      public: true,
-      forRenderer: true,
-      hasEssential: true,
-      shadowingInstructions: {
-        createComponentOfType: "point"
-      },
-      returnDependencies: () => ({
-        anchorAttr: {
-          dependencyType: "attributeComponent",
-          attributeName: "anchor",
-          variableNames: ["coords"],
-        }
-      }),
-      definition({ dependencyValues }) {
-        if (dependencyValues.anchorAttr) {
-          return { setValue: { anchor: dependencyValues.anchorAttr.stateValues.coords } }
-        } else {
-          return { useEssentialOrDefaultValue: { anchor: true } }
-        }
-      },
-      async inverseDefinition({ desiredStateVariableValues, dependencyValues, stateValues, initialChange }) {
+    // stateVariableDefinitions.anchor = {
+    //   defaultValue: me.fromText("(0,0)"),
+    //   public: true,
+    //   forRenderer: true,
+    //   hasEssential: true,
+    //   shadowingInstructions: {
+    //     createComponentOfType: "point"
+    //   },
+    //   returnDependencies: () => ({
+    //     anchorAttr: {
+    //       dependencyType: "attributeComponent",
+    //       attributeName: "anchor",
+    //       variableNames: ["coords"],
+    //     }
+    //   }),
+    //   definition({ dependencyValues }) {
+    //     if (dependencyValues.anchorAttr) {
+    //       return { setValue: { anchor: dependencyValues.anchorAttr.stateValues.coords } }
+    //     } else {
+    //       return { useEssentialOrDefaultValue: { anchor: true } }
+    //     }
+    //   },
+    //   async inverseDefinition({ desiredStateVariableValues, dependencyValues, stateValues, initialChange }) {
 
-        // if not draggable, then disallow initial change 
-        if (initialChange && !await stateValues.draggable) {
-          return { success: false };
-        }
+    //     // if not draggable, then disallow initial change 
+    //     if (initialChange && !await stateValues.draggable) {
+    //       return { success: false };
+    //     }
 
-        if (dependencyValues.anchorAttr) {
-          return {
-            success: true,
-            instructions: [{
-              setDependency: "anchorAttr",
-              desiredValue: desiredStateVariableValues.anchor,
-              variableIndex: 0,
-            }]
-          }
-        } else {
-          return {
-            success: true,
-            instructions: [{
-              setEssentialValue: "anchor",
-              value: desiredStateVariableValues.anchor
-            }]
-          }
-        }
+    //     if (dependencyValues.anchorAttr) {
+    //       return {
+    //         success: true,
+    //         instructions: [{
+    //           setDependency: "anchorAttr",
+    //           desiredValue: desiredStateVariableValues.anchor,
+    //           variableIndex: 0,
+    //         }]
+    //       }
+    //     } else {
+    //       return {
+    //         success: true,
+    //         instructions: [{
+    //           setEssentialValue: "anchor",
+    //           value: desiredStateVariableValues.anchor
+    //         }]
+    //       }
+    //     }
 
-      }
-    }
+    //   }
+    // }
 
     return stateVariableDefinitions;
 

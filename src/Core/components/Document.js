@@ -20,12 +20,12 @@ export default class Document extends BaseComponent {
     delete attributes.styleNumber;
     delete attributes.isResponse;
 
-    attributes.documentWideCheckWork = {
-      createComponentOfType: "boolean",
-      createStateVariable: "documentWideCheckWork",
-      defaultValue: false,
-      public: true,
-    };
+    // attributes.documentWideCheckWork = {
+    //   createComponentOfType: "boolean",
+    //   createStateVariable: "documentWideCheckWork",
+    //   defaultValue: false,
+    //   public: true,
+    // };
     attributes.submitLabel = {
       createComponentOfType: "text",
       createStateVariable: "submitLabel",
@@ -42,7 +42,7 @@ export default class Document extends BaseComponent {
     }
 
     attributes.displayDigitsForCreditAchieved = {
-      createComponentOfType: "integer",
+      createComponentOfType: "text",
       createStateVariable: "displayDigitsForCreditAchieved",
       defaultValue: 3,
       public: true
@@ -64,18 +64,18 @@ export default class Document extends BaseComponent {
   static returnChildGroups() {
 
     return [{
-      group: "variantControl",
-      componentTypes: ["variantControl"]
-    }, {
-      group: "title",
-      componentTypes: ["title"]
-    }, {
-      group: "description",
-      componentTypes: ["description"]
-    }, {
-      group: "setups",
-      componentTypes: ["setup"],
-    }, {
+    //   group: "variantControl",
+    //   componentTypes: ["variantControl"]
+    // }, {
+    //   group: "title",
+    //   componentTypes: ["title"]
+    // }, {
+    //   group: "description",
+    //   componentTypes: ["description"]
+    // }, {
+    //   group: "setups",
+    //   componentTypes: ["boolean"],
+    // }, {
       group: "anything",
       componentTypes: ["_base"]
     }]
@@ -87,26 +87,26 @@ export default class Document extends BaseComponent {
 
     let stateVariableDefinitions = super.returnStateVariableDefinitions();
 
-    let styleDefinitionStateVariables = returnStyleDefinitionStateVariables();
-    Object.assign(stateVariableDefinitions, styleDefinitionStateVariables);
+    // let styleDefinitionStateVariables = returnStyleDefinitionStateVariables();
+    // Object.assign(stateVariableDefinitions, styleDefinitionStateVariables);
 
-    let feedbackDefinitionStateVariables = returnFeedbackDefinitionStateVariables();
-    Object.assign(stateVariableDefinitions, feedbackDefinitionStateVariables);
+    // let feedbackDefinitionStateVariables = returnFeedbackDefinitionStateVariables();
+    // Object.assign(stateVariableDefinitions, feedbackDefinitionStateVariables);
 
 
     stateVariableDefinitions.titleChildName = {
       forRenderer: true,
       returnDependencies: () => ({
-        titleChild: {
-          dependencyType: "child",
-          childGroups: ["title"],
-        },
+        // titleChild: {
+        //   dependencyType: "child",
+        //   childGroups: ["title"],
+        // },
       }),
       definition({ dependencyValues }) {
         let titleChildName = null;
-        if (dependencyValues.titleChild.length > 0) {
-          titleChildName = dependencyValues.titleChild[0].componentName
-        }
+        // if (dependencyValues.titleChild.length > 0) {
+        //   titleChildName = dependencyValues.titleChild[0].componentName
+        // }
         return {
           setValue: { titleChildName }
         }
@@ -121,18 +121,18 @@ export default class Document extends BaseComponent {
       },
       forRenderer: true,
       returnDependencies: () => ({
-        titleChild: {
-          dependencyType: "child",
-          childGroups: ["title"],
-          variableNames: ["text"],
-        }
+        // titleChild: {
+        //   dependencyType: "child",
+        //   childGroups: ["title"],
+        //   variableNames: ["text"],
+        // }
       }),
       definition({ dependencyValues }) {
-        if (dependencyValues.titleChild.length === 0) {
+        // if (dependencyValues.titleChild.length === 0) {
           return { setValue: { title: "" } };
-        } else {
-          return { setValue: { title: dependencyValues.titleChild[0].stateValues.text } };
-        }
+        // } else {
+        //   return { setValue: { title: dependencyValues.titleChild[0].stateValues.text } };
+        // }
       }
     }
 
@@ -143,18 +143,18 @@ export default class Document extends BaseComponent {
         createComponentOfType: "text",
       },
       returnDependencies: () => ({
-        descriptionChild: {
-          dependencyType: "child",
-          childGroups: ["description"],
-          variableNames: ["text"],
-        }
+        // descriptionChild: {
+        //   dependencyType: "child",
+        //   childGroups: ["description"],
+        //   variableNames: ["text"],
+        // }
       }),
       definition({ dependencyValues }) {
-        if (dependencyValues.descriptionChild.length === 0) {
+        // if (dependencyValues.descriptionChild.length === 0) {
           return { setValue: { description: "" } };
-        } else {
-          return { setValue: { description: dependencyValues.descriptionChild[0].stateValues.text } };
-        }
+        // } else {
+        //   return { setValue: { description: dependencyValues.descriptionChild[0].stateValues.text } };
+        // }
       }
     }
 
@@ -582,10 +582,10 @@ export default class Document extends BaseComponent {
         forRenderer: true,
       }],
       returnDependencies: () => ({
-        documentWideCheckWork: {
-          dependencyType: "stateVariable",
-          variableName: "documentWideCheckWork"
-        },
+        // documentWideCheckWork: {
+        //   dependencyType: "stateVariable",
+        //   variableName: "documentWideCheckWork"
+        // },
       }),
       definition({ dependencyValues, componentName }) {
 

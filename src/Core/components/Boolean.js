@@ -71,7 +71,7 @@ export default class BooleanComponent extends InlineComponent {
       public: true,
     };
     attributes.nPeriodicSetMatchesRequired = {
-      createComponentOfType: "integer",
+      createComponentOfType: "number",
       createStateVariable: "nPeriodicSetMatchesRequired",
       defaultValue: 3,
       public: true,
@@ -100,11 +100,12 @@ export default class BooleanComponent extends InlineComponent {
     }, {
       group: "comparableTypes",
       componentTypes: [
-        "math", "mathList",
-        "number", "numberList",
-        "text", "textList",
-        "boolean", "booleanList",
-        "orbitalDiagram"
+        // "math", "mathList",
+        // "number", "numberList",
+        // "text", "textList",
+        "boolean", 
+        // "booleanList",
+        // "orbitalDiagram"
       ]
     }]
 

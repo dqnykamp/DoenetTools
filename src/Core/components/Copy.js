@@ -51,7 +51,7 @@ export default class Copy extends CompositeComponent {
       createPrimitiveOfType: "number",
     };
     attributes.componentIndex = {
-      createComponentOfType: "integer",
+      createComponentOfType: "text",
       createStateVariable: "componentIndex",
       defaultValue: null,
       public: true,
@@ -63,13 +63,13 @@ export default class Copy extends CompositeComponent {
       public: true,
     };
     attributes.sourceSubnamesComponentIndex = {
-      createComponentOfType: "numberList",
+      createComponentOfType: "text",
       createStateVariable: "targetSubnamesComponentIndex",
       defaultValue: null,
       public: true,
     };
     attributes.propIndex = {
-      createComponentOfType: "numberList",
+      createComponentOfType: "text",
       createStateVariable: "propIndex",
       defaultValue: null,
       public: true,

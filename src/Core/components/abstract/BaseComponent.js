@@ -254,40 +254,40 @@ export default class BaseComponent {
 
     return {
       hide: {
-        createComponentOfType: "boolean",
+        createComponentOfType: "text",
         createStateVariable: "hide",
         defaultValue: false,
         public: true,
       },
       disabled: {
-        createComponentOfType: "boolean",
+        createComponentOfType: "text",
       },
       fixed: {
-        createComponentOfType: "boolean",
+        createComponentOfType: "text",
         ignoreFixed: true,
       },
       modifyIndirectly: {
-        createComponentOfType: "boolean",
+        createComponentOfType: "text",
         createStateVariable: "modifyIndirectly",
         defaultValue: true,
         public: true,
         propagateToProps: true,
       },
       styleNumber: {
-        createComponentOfType: "number",
+        createComponentOfType: "text",
         createStateVariable: "styleNumber",
         defaultValue: 1,
         public: true,
         fallBackToParentStateVariable: "styleNumber",
       },
       isResponse: {
-        createPrimitiveOfType: "boolean",
+        createPrimitiveOfType: "text",
         createStateVariable: "isResponse",
         defaultValue: false,
         public: true,
       },
       newNamespace: {
-        createPrimitiveOfType: "boolean",
+        createPrimitiveOfType: "text",
         createStateVariable: "newNamespace",
         defaultValue: false,
         public: true,
