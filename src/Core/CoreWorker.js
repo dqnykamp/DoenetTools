@@ -21,12 +21,13 @@ onmessage = function (e) {
   } else if (e.data.messageType === "returnAllStateVariables") {
     console.log('all components')
     console.log(core._components)
-    returnAllStateVariables(core).then(componentsObj => {
-      postMessage({
-        messageType: "returnAllStateVariables",
-        args: componentsObj
-      })
-    });
+    console.log(core);
+    // returnAllStateVariables(core).then(componentsObj => {
+    //   postMessage({
+    //     messageType: "returnAllStateVariables",
+    //     args: componentsObj
+    //   })
+    // });
   } else if (e.data.messageType === "visibilityChange") {
     core.handleVisibilityChange(e.data.args)
   } else if (e.data.messageType === "terminate") {

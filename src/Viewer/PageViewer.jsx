@@ -13,6 +13,7 @@ import axios from 'axios';
 import { returnAllPossibleVariants } from '../Core/utils/returnAllPossibleVariants';
 import { useLocation } from "react-router";
 import cssesc from 'cssesc';
+import Core from '../Core/Core';
 
 const rendererUpdatesToIgnore = atomFamily({
   key: 'rendererUpdatesToIgnore',
@@ -799,8 +800,28 @@ export default function PageViewer(props) {
     }
     // console.log(`send message to create core ${pageNumber}`)
 
-    coreWorker.current = new Worker(props.unbundledCore ? 'core/CoreWorker.js' : '/viewer/core.js', { type: 'module' });
+    
+    // let core = new Core({
+    //   coreId: coreId.current,
+    //   userId: props.userId,
+    //   doenetML,
+    //   doenetId: props.doenetId,
+    //   previousComponentTypeCounts: props.previousComponentTypeCounts,
+    //   activityCid: props.activityCid,
+    //   flags: props.flags,
+    //   requestedVariantIndex,
+    //   pageNumber,
+    //   attemptNumber,
+    //   itemNumber: props.itemNumber,
+    //   updateDataOnContentChange: props.updateDataOnContentChange,
+    //   serverSaveId: initialCoreData.current.serverSaveId,
+    //   activityVariantIndex: props.activityVariantIndex,
+    //   requestedVariant: initialCoreData.current.requestedVariant,
+    //   stateVariableChanges: initialCoreData.current.coreState ? initialCoreData.current.coreState : undefined
+    // })
 
+
+    coreWorker.current = new Worker(props.unbundledCore ? 'core/CoreWorker.js' : '/viewer/core.js', { type: 'module' });
     coreWorker.current.postMessage({
       messageType: "createCore",
       args: {

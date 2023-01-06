@@ -25,11 +25,11 @@ import { gatherVariantComponents, getNumberOfVariants } from './utils/variants';
 // string to componentClass: this.componentInfoObjects.allComponentClasses["string"]
 // componentClass to string: componentClass.componentType
 
-try {
-  postMessage;
-} catch(e) {
-  var postMessage = function () {};
-}
+// try {
+//   postMessage;
+// } catch(e) {
+//   var postMessage = function () {};
+// }
 
 export default class Core {
   constructor({ doenetML, doenetId, activityCid, pageNumber, attemptNumber = 1, itemNumber = 1,
