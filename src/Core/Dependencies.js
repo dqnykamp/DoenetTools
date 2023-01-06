@@ -468,80 +468,80 @@ export class DependencyHandler {
 
   checkForCircularDependency({ componentName, varName, previouslyVisited = [] }) {
 
-    let stateVariableIdentifier = componentName + ":" + varName;
+    // let stateVariableIdentifier = componentName + ":" + varName;
 
-    if (previouslyVisited.includes(stateVariableIdentifier)) {
-      // Found circular dependency
-      // Create error message with list of component names involved
+    // if (previouslyVisited.includes(stateVariableIdentifier)) {
+    //   // Found circular dependency
+    //   // Create error message with list of component names involved
 
-      console.log('found circular', stateVariableIdentifier, previouslyVisited)
-
-
-      let componentNameRe = /^(.*):/
-      let componentNamesInvolved = previouslyVisited
-        .map(x => x.match(componentNameRe)[1])
-
-      // remove internally created component names
-      // and deduplicate while keeping order (so don't use Set)
-      let uniqueComponentNames = componentNamesInvolved
-        .filter(x => x.slice(0, 2) !== "__")
-        .reduce((a, b) => a.includes(b) ? a : [...a, b], [])
-
-      // If had only internally created component names, just give first componentName
-      if (uniqueComponentNames.length === 0) {
-        uniqueComponentNames = [componentNamesInvolved[0]]
-      }
-
-      let nameString;
-      if (uniqueComponentNames.length === 1) {
-        nameString = uniqueComponentNames[0]
-      } else if (uniqueComponentNames.length === 2) {
-        nameString = uniqueComponentNames.join(' and ')
-      } else {
-        uniqueComponentNames[uniqueComponentNames.length - 2] = uniqueComponentNames.slice(uniqueComponentNames.length - 2).join(", and ")
-        uniqueComponentNames.pop();
-        nameString = uniqueComponentNames.join(", ")
-      }
-
-      throw Error(`Circular dependency involving ${nameString}`);
-
-    } else {
-      // shallow copy so don't change original
-      previouslyVisited = [...previouslyVisited, stateVariableIdentifier];
-    }
+    //   console.log('found circular', stateVariableIdentifier, previouslyVisited)
 
 
-    if (!this.circularCheckPassed[stateVariableIdentifier]) {
-      this.circularCheckPassed[stateVariableIdentifier] = true;
+    //   let componentNameRe = /^(.*):/
+    //   let componentNamesInvolved = previouslyVisited
+    //     .map(x => x.match(componentNameRe)[1])
+
+    //   // remove internally created component names
+    //   // and deduplicate while keeping order (so don't use Set)
+    //   let uniqueComponentNames = componentNamesInvolved
+    //     .filter(x => x.slice(0, 2) !== "__")
+    //     .reduce((a, b) => a.includes(b) ? a : [...a, b], [])
+
+    //   // If had only internally created component names, just give first componentName
+    //   if (uniqueComponentNames.length === 0) {
+    //     uniqueComponentNames = [componentNamesInvolved[0]]
+    //   }
+
+    //   let nameString;
+    //   if (uniqueComponentNames.length === 1) {
+    //     nameString = uniqueComponentNames[0]
+    //   } else if (uniqueComponentNames.length === 2) {
+    //     nameString = uniqueComponentNames.join(' and ')
+    //   } else {
+    //     uniqueComponentNames[uniqueComponentNames.length - 2] = uniqueComponentNames.slice(uniqueComponentNames.length - 2).join(", and ")
+    //     uniqueComponentNames.pop();
+    //     nameString = uniqueComponentNames.join(", ")
+    //   }
+
+    //   throw Error(`Circular dependency involving ${nameString}`);
+
+    // } else {
+    //   // shallow copy so don't change original
+    //   previouslyVisited = [...previouslyVisited, stateVariableIdentifier];
+    // }
 
 
-      if (componentName in this.downstreamDependencies) {
+    // if (!this.circularCheckPassed[stateVariableIdentifier]) {
+    //   this.circularCheckPassed[stateVariableIdentifier] = true;
 
-        let downDeps = this.downstreamDependencies[componentName][varName];
-        for (let dependencyName in downDeps) {
-          let dep = downDeps[dependencyName];
 
-          let downstreamComponentNames = dep.downstreamComponentNames;
-          if (!downstreamComponentNames) {
-            continue;
-          }
-          let mappedDownstreamVariableNamesByComponent = dep.mappedDownstreamVariableNamesByComponent;
-          if (!mappedDownstreamVariableNamesByComponent) {
-            continue;
-          }
+    //   if (componentName in this.downstreamDependencies) {
 
-          for (let [ind, cname] of downstreamComponentNames.entries()) {
-            let varNames = mappedDownstreamVariableNamesByComponent[ind];
-            for (let vname of varNames) {
-              this.checkForCircularDependency({
-                componentName: cname, varName: vname,
-                previouslyVisited
-              });
-            }
-          }
-        }
-      }
-    }
+    //     let downDeps = this.downstreamDependencies[componentName][varName];
+    //     for (let dependencyName in downDeps) {
+    //       let dep = downDeps[dependencyName];
+
+    //       let downstreamComponentNames = dep.downstreamComponentNames;
+    //       if (!downstreamComponentNames) {
+    //         continue;
+    //       }
+    //       let mappedDownstreamVariableNamesByComponent = dep.mappedDownstreamVariableNamesByComponent;
+    //       if (!mappedDownstreamVariableNamesByComponent) {
+    //         continue;
+    //       }
+
+    //       for (let [ind, cname] of downstreamComponentNames.entries()) {
+    //         let varNames = mappedDownstreamVariableNamesByComponent[ind];
+    //         for (let vname of varNames) {
+    //           this.checkForCircularDependency({
+    //             componentName: cname, varName: vname,
+    //             previouslyVisited
+    //           });
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   }
 
 
@@ -682,16 +682,16 @@ export class DependencyHandler {
     // console.log(`actually did change a dependency for ${stateVariable} of ${component.componentName}`)
 
 
-    for (let dep of changeResult.newlyCreatedDependencies) {
-      dep.checkForCircular();
-    }
+    // for (let dep of changeResult.newlyCreatedDependencies) {
+    //   dep.checkForCircular();
+    // }
 
 
     for (let varName of allStateVariablesAffected) {
-      this.checkForCircularDependency({
-        componentName: component.componentName,
-        varName,
-      });
+      // this.checkForCircularDependency({
+      //   componentName: component.componentName,
+      //   varName,
+      // });
       component.state[varName].forceRecalculation = true;
     }
 
@@ -1592,19 +1592,19 @@ export class DependencyHandler {
       blockedByBlocker.push(codeBlocked);
     }
 
-    this.resetCircularResolveBlockerCheckPassed({
-      componentName: componentNameBlocked,
-      type: typeBlocked,
-      stateVariable: stateVariableBlocked,
-      dependency: dependencyBlocked
-    });
+    // this.resetCircularResolveBlockerCheckPassed({
+    //   componentName: componentNameBlocked,
+    //   type: typeBlocked,
+    //   stateVariable: stateVariableBlocked,
+    //   dependency: dependencyBlocked
+    // });
 
-    this.checkForCircularResolveBlocker({
-      componentName: componentNameBlocked,
-      type: typeBlocked,
-      stateVariable: stateVariableBlocked,
-      dependency: dependencyBlocked
-    });
+    // this.checkForCircularResolveBlocker({
+    //   componentName: componentNameBlocked,
+    //   type: typeBlocked,
+    //   stateVariable: stateVariableBlocked,
+    //   dependency: dependencyBlocked
+    // });
 
   }
 
@@ -2181,121 +2181,121 @@ export class DependencyHandler {
 
   checkForCircularResolveBlocker({ componentName, type, stateVariable, dependency, previouslyVisited = [] }) {
 
-    let code = componentName;
-    if (stateVariable) {
-      code += '|' + stateVariable;
-      if (dependency) {
-        code += '|' + dependency;
-      }
-    }
+    // let code = componentName;
+    // if (stateVariable) {
+    //   code += '|' + stateVariable;
+    //   if (dependency) {
+    //     code += '|' + dependency;
+    //   }
+    // }
 
-    let identifier = code + '|' + type;
-
-
-    if (previouslyVisited.includes(identifier)) {
-      // Found circular dependency
-      // Create error message with list of component names involved
-
-      console.log('found circular', identifier, previouslyVisited)
+    // let identifier = code + '|' + type;
 
 
-      let componentNameRe = /^([^\|]*)\|/
-      let componentNamesInvolved = previouslyVisited
-        .map(x => x.match(componentNameRe)[1]);
+    // if (previouslyVisited.includes(identifier)) {
+    //   // Found circular dependency
+    //   // Create error message with list of component names involved
+
+    //   console.log('found circular', identifier, previouslyVisited)
+
+
+    //   let componentNameRe = /^([^\|]*)\|/
+    //   let componentNamesInvolved = previouslyVisited
+    //     .map(x => x.match(componentNameRe)[1]);
 
 
 
-      // remove internally created component names
-      // and deduplicate while keeping order (so don't use Set)
-      let uniqueComponentNames = componentNamesInvolved
-        .filter(x => x.slice(0, 2) !== "__")
-        .reduce((a, b) => a.includes(b) ? a : [...a, b], [])
+    //   // remove internally created component names
+    //   // and deduplicate while keeping order (so don't use Set)
+    //   let uniqueComponentNames = componentNamesInvolved
+    //     .filter(x => x.slice(0, 2) !== "__")
+    //     .reduce((a, b) => a.includes(b) ? a : [...a, b], [])
 
-      // If had only internally created component names, just give first componentName
-      if (uniqueComponentNames.length === 0) {
-        uniqueComponentNames = [componentNamesInvolved[0]]
-      }
+    //   // If had only internally created component names, just give first componentName
+    //   if (uniqueComponentNames.length === 0) {
+    //     uniqueComponentNames = [componentNamesInvolved[0]]
+    //   }
 
-      let nameString;
-      if (uniqueComponentNames.length === 1) {
-        nameString = uniqueComponentNames[0]
-      } else if (uniqueComponentNames.length === 2) {
-        nameString = uniqueComponentNames.join(' and ')
-      } else {
-        uniqueComponentNames[uniqueComponentNames.length - 2] = uniqueComponentNames.slice(uniqueComponentNames.length - 2).join(", and ")
-        uniqueComponentNames.pop();
-        nameString = uniqueComponentNames.join(", ")
-      }
-
-
-      // look for a composite with state variables readyToExpandWhenResolved
-      // and needsReplacementsUpdatedWhenStale
-
-      let compositesWithReadyToExpandWhenResolved = [];
-      let compositesWithStateVariableToEvaluateAfterReplacements = [];
-      for (let identifier of previouslyVisited) {
-        let [componentName, stateVariable] = identifier.split('|');
-        let component = this._components[componentName];
-        if (component) {
-          let isComposite = this.componentInfoObjects.isInheritedComponentType({
-            inheritedComponentType: component.componentType,
-            baseComponentType: "_composite"
-          })
-          if (isComposite && !(component.attributes.createComponentOfType?.primitive)) {
-            if (stateVariable === "readyToExpandWhenResolved") {
-              compositesWithReadyToExpandWhenResolved.push(componentName)
-            } else if (stateVariable === component.constructor.stateVariableToEvaluateAfterReplacements) {
-              compositesWithStateVariableToEvaluateAfterReplacements.push(componentName)
-            }
-          }
-        }
-
-      }
-
-      let foundCompositeWithCombination = false;
-      for (let componentName of compositesWithReadyToExpandWhenResolved) {
-        if (compositesWithStateVariableToEvaluateAfterReplacements.includes(componentName)) {
-          foundCompositeWithCombination = true;
-          break;
-        }
-      }
+    //   let nameString;
+    //   if (uniqueComponentNames.length === 1) {
+    //     nameString = uniqueComponentNames[0]
+    //   } else if (uniqueComponentNames.length === 2) {
+    //     nameString = uniqueComponentNames.join(' and ')
+    //   } else {
+    //     uniqueComponentNames[uniqueComponentNames.length - 2] = uniqueComponentNames.slice(uniqueComponentNames.length - 2).join(", and ")
+    //     uniqueComponentNames.pop();
+    //     nameString = uniqueComponentNames.join(", ")
+    //   }
 
 
-      let message = `Circular dependency involving ${nameString}.`;
-      if (foundCompositeWithCombination) {
-        message += "  Specifying the type of a composite component may address this circular dependency."
+    //   // look for a composite with state variables readyToExpandWhenResolved
+    //   // and needsReplacementsUpdatedWhenStale
 
-      }
-      throw Error(message);
+    //   let compositesWithReadyToExpandWhenResolved = [];
+    //   let compositesWithStateVariableToEvaluateAfterReplacements = [];
+    //   for (let identifier of previouslyVisited) {
+    //     let [componentName, stateVariable] = identifier.split('|');
+    //     let component = this._components[componentName];
+    //     if (component) {
+    //       let isComposite = this.componentInfoObjects.isInheritedComponentType({
+    //         inheritedComponentType: component.componentType,
+    //         baseComponentType: "_composite"
+    //       })
+    //       if (isComposite && !(component.attributes.createComponentOfType?.primitive)) {
+    //         if (stateVariable === "readyToExpandWhenResolved") {
+    //           compositesWithReadyToExpandWhenResolved.push(componentName)
+    //         } else if (stateVariable === component.constructor.stateVariableToEvaluateAfterReplacements) {
+    //           compositesWithStateVariableToEvaluateAfterReplacements.push(componentName)
+    //         }
+    //       }
+    //     }
 
-    } else {
-      // shallow copy so don't change original
-      previouslyVisited = [...previouslyVisited, identifier];
-    }
+    //   }
 
-    if (!this.circularResolveBlockedCheckPassed[identifier]) {
-      this.circularResolveBlockedCheckPassed[identifier] = true;
+    //   let foundCompositeWithCombination = false;
+    //   for (let componentName of compositesWithReadyToExpandWhenResolved) {
+    //     if (compositesWithStateVariableToEvaluateAfterReplacements.includes(componentName)) {
+    //       foundCompositeWithCombination = true;
+    //       break;
+    //     }
+    //   }
 
-      let neededForItem = this.getNeededToResolve({
-        componentName, type, stateVariable, dependency
-      })
 
-      for (let blockerType in neededForItem) {
-        for (let blockerCode of neededForItem[blockerType]) {
-          let [blockerComponentName, blockerStateVariable, blockerDependency] =
-            blockerCode.split('|');
+    //   let message = `Circular dependency involving ${nameString}.`;
+    //   if (foundCompositeWithCombination) {
+    //     message += "  Specifying the type of a composite component may address this circular dependency."
 
-          this.checkForCircularResolveBlocker({
-            componentName: blockerComponentName,
-            type: blockerType,
-            stateVariable: blockerStateVariable,
-            dependency: blockerDependency,
-            previouslyVisited
-          })
-        }
-      }
+    //   }
+    //   throw Error(message);
 
-    }
+    // } else {
+    //   // shallow copy so don't change original
+    //   previouslyVisited = [...previouslyVisited, identifier];
+    // }
+
+    // if (!this.circularResolveBlockedCheckPassed[identifier]) {
+    //   this.circularResolveBlockedCheckPassed[identifier] = true;
+
+    //   let neededForItem = this.getNeededToResolve({
+    //     componentName, type, stateVariable, dependency
+    //   })
+
+    //   for (let blockerType in neededForItem) {
+    //     for (let blockerCode of neededForItem[blockerType]) {
+    //       let [blockerComponentName, blockerStateVariable, blockerDependency] =
+    //         blockerCode.split('|');
+
+    //       this.checkForCircularResolveBlocker({
+    //         componentName: blockerComponentName,
+    //         type: blockerType,
+    //         stateVariable: blockerStateVariable,
+    //         dependency: blockerDependency,
+    //         previouslyVisited
+    //       })
+    //     }
+    //   }
+
+    // }
   }
 
   resetCircularResolveBlockerCheckPassed({ componentName, type, stateVariable, dependency }) {
@@ -3021,14 +3021,14 @@ class Dependency {
   }
 
   checkForCircular() {
-    for (let varName of this.upstreamVariableNames) {
-      this.dependencyHandler.resetCircularCheckPassed(this.upstreamComponentName, varName);
-    }
-    for (let varName of this.upstreamVariableNames) {
-      this.dependencyHandler.checkForCircularDependency({
-        componentName: this.upstreamComponentName, varName
-      });
-    }
+    // for (let varName of this.upstreamVariableNames) {
+    //   this.dependencyHandler.resetCircularCheckPassed(this.upstreamComponentName, varName);
+    // }
+    // for (let varName of this.upstreamVariableNames) {
+    //   this.dependencyHandler.checkForCircularDependency({
+    //     componentName: this.upstreamComponentName, varName
+    //   });
+    // }
   }
 
   async recalculateDownstreamComponents({ force = false } = {}) {
