@@ -1267,7 +1267,7 @@ export default class Core {
         });
 
       }
-      
+
       if (componentClass.keepChildrenSerialized) {
         let childrenAddressed = new Set([]);
 
@@ -1449,7 +1449,7 @@ export default class Core {
 
     await this.checkForStateVariablesUpdatesForNewComponent(componentName)
 
-    await this.dependencies.resolveStateVariablesIfReady({ component: newComponent });
+    // await this.dependencies.resolveStateVariablesIfReady({ component: newComponent });
 
     await this.checkForActionChaining({ component: newComponent });
 
@@ -5096,7 +5096,55 @@ export default class Core {
 
     }
 
+    // console.log(`is ${stateVariable} resolved?`, component.state[stateVariable].isResolved);
+
     let definitionArgs = await this.getStateVariableDefinitionArguments({ component, stateVariable });
+
+    // console.log(`got def args for state variable ${stateVariable} of ${component.componentName}`)
+
+    // console.log('definitionArgs', definitionArgs);
+
+
+    let resolved_again = true;
+
+    while (resolved_again) {
+      // console.log(`is ${stateVariable} still resolved?`, component.state[stateVariable].isResolved);
+
+      let old_changes = definitionArgs.changes;
+
+      resolved_again = false;
+      for (let varName of allStateVariablesAffected) {
+
+        if (!component.state[varName].isResolved) {
+
+          resolved_again = true;
+
+          let result = await this.dependencies.resolveItem({
+            componentName: component.componentName,
+            type: "stateVariable",
+            stateVariable: varName,
+            force: true,
+          });
+
+          if (!result.success) {
+            throw Error(`Can't get value of ${stateVariable} of ${component.componentName} as ${varName} couldn't be resolved.`);
+          }
+
+        }
+      }
+
+      if (resolved_again) {
+        definitionArgs = await this.getStateVariableDefinitionArguments({ component, stateVariable });
+
+        Object.assign(old_changes, definitionArgs.changes);
+        definitionArgs.changes = old_changes;
+
+        // console.log('definitionArgs', definitionArgs);
+
+      }
+    }
+
+
     definitionArgs.componentInfoObjects = this.componentInfoObjects;
     definitionArgs.justUpdatedForNewComponent = justUpdatedForNewComponent;
 
@@ -6380,7 +6428,7 @@ export default class Core {
     let downDeps = this.dependencies.downstreamDependencies[component.componentName][varName];
 
     for (let dependencyName in downDeps) {
-      let dep = downDeps[dependencyName];
+      let dep = await downDeps[dependencyName];
       let depChanges = {};
       let foundDepChange = false;
       if (dep.componentIdentityChanged) {
@@ -9245,7 +9293,7 @@ export default class Core {
       if (newInstruction.setDependency) {
         let dependencyName = newInstruction.setDependency;
 
-        let dep = this.dependencies.downstreamDependencies[component.componentName][stateVariable][dependencyName];
+        let dep = await this.dependencies.downstreamDependencies[component.componentName][stateVariable][dependencyName];
         if (["stateVariable", "parentStateVariable"].includes(dep.dependencyType)
           && dep.downstreamComponentNames.length === 1
         ) {
@@ -9405,7 +9453,7 @@ export default class Core {
       } else if (newInstruction.setDependency) {
         let dependencyName = newInstruction.setDependency;
 
-        let dep = this.dependencies.downstreamDependencies[component.componentName][stateVariable][dependencyName];
+        let dep = await this.dependencies.downstreamDependencies[component.componentName][stateVariable][dependencyName];
 
         if (dep.dependencyType === "child") {
 
@@ -9539,7 +9587,7 @@ export default class Core {
 
             let stateVarObj = this.components[dComponentName].state[dVarName]
             for (let dependencyName2 in newInstruction.additionalDependencyValues) {
-              let dep2 = this.dependencies.downstreamDependencies[component.componentName][stateVariable][dependencyName2];
+              let dep2 = await this.dependencies.downstreamDependencies[component.componentName][stateVariable][dependencyName2];
               if (!(["stateVariable", "parentStateVariable"].includes(dep2.dependencyType)
                 && dep2.downstreamComponentNames.length === 1)
               ) {

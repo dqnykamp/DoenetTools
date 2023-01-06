@@ -86,6 +86,9 @@ export class DependencyHandler {
   }
 
   async setUpStateVariableDependencies({ component, stateVariable, allStateVariablesAffected }) {
+
+    // console.log(`set up state var deps of ${stateVariable} of ${component.componentName}`);
+
     let stateVarObj = component.state[stateVariable];
     let dependencies;
 
@@ -109,23 +112,54 @@ export class DependencyHandler {
       });
     }
 
+    let upCompDownDeps = this.downstreamDependencies[component.componentName];
+    if (!upCompDownDeps) {
+      upCompDownDeps = this.downstreamDependencies[component.componentName] = {};
+    }
+
     for (let dependencyName in dependencies) {
       let dependencyDefinition = dependencies[dependencyName];
       if (!(dependencyDefinition.dependencyType in this.dependencyTypes)) {
         throw Error(`Unrecognized dependency type ${dependencyDefinition.dependencyType} for ${dependencyName} of ${stateVariable} of ${component.componentName}`);
       }
-      let dep = new this.dependencyTypes[dependencyDefinition.dependencyType]({
-        component, stateVariable, allStateVariablesAffected,
-        dependencyName, dependencyDefinition,
-        dependencyHandler: this,
-        expandComposites: false,
-        forceExpandComposites: false,
-      })
 
-      await dep.initialize();
+      let depHander = this;
 
-      dep.checkForCircular();
+      let createDep = async function () {
+        let dep = new depHander.dependencyTypes[dependencyDefinition.dependencyType]({
+          component, stateVariable, allStateVariablesAffected,
+          dependencyName, dependencyDefinition,
+          dependencyHandler: depHander,
+          expandComposites: false,
+          forceExpandComposites: false,
+        })
+
+        await dep.initialize();
+
+        // dep.checkForCircular();
+
+        return dep;
+      }
+
+
+
+
+      for (let varName of allStateVariablesAffected) {
+
+        if (!upCompDownDeps[varName]) {
+          upCompDownDeps[varName] = {};
+        }
+        delete upCompDownDeps[varName][dependencyName];
+
+
+        Object.defineProperty(upCompDownDeps[varName], dependencyName, { get: createDep, configurable: true, enumerable: true });
+
+        // await upCompDownDeps[varName][dependencyName];
+      }
+
+
     }
+
 
   }
 
@@ -147,7 +181,10 @@ export class DependencyHandler {
       let downDeps = this.downstreamDependencies[componentName][stateVariable];
 
       for (let downDepName in downDeps) {
-        downDeps[downDepName].deleteDependency();
+        let downDepIsCreated = !Object.getOwnPropertyDescriptor(downDeps, downDepName).get;
+        if (downDepIsCreated) {
+          downDeps[downDepName].deleteDependency();
+        }
       }
 
       delete this.downstreamDependencies[componentName][stateVariable];
@@ -577,7 +614,7 @@ export class DependencyHandler {
       allStateVariablesAffected.push(...stateVarObj.additionalStateVariablesDefined)
     }
 
-    let determineDeps = this.downstreamDependencies[componentName][stateVariable].__determine_dependencies;
+    let determineDeps = await this.downstreamDependencies[componentName][stateVariable].__determine_dependencies;
     let dependencyResult;
 
     if (determineDeps) {
@@ -735,34 +772,55 @@ export class DependencyHandler {
 
     let changedDependency = false;
 
-    let newlyCreatedDependencies = [];
+    // let newlyCreatedDependencies = [];
 
     for (let dependencyName in currentDeps) {
       if (!(dependencyName in newDependencies)) {
         changedDependency = true;
-        currentDeps[dependencyName].deleteDependency();
+        let currentDepIsCreated = !Object.getOwnPropertyDescriptor(currentDeps, dependencyName).get;
+        if (currentDepIsCreated) {
+          currentDeps[dependencyName].deleteDependency();
+        }
       }
     }
 
     for (let dependencyName in newDependencies) {
       if (dependencyName in currentDeps) {
         let dependencyDefinition = newDependencies[dependencyName];
-        let currentDep = currentDeps[dependencyName];
-        if (!deepCompare(dependencyDefinition, currentDep.definition)) {
+        let currentDepIsCreated = !Object.getOwnPropertyDescriptor(currentDeps, dependencyName).get;
+        if (!currentDepIsCreated || !deepCompare(dependencyDefinition, currentDeps[dependencyName].definition)) {
           changedDependency = true;
-          currentDeps[dependencyName].deleteDependency();
+          if (currentDepIsCreated) {
+            currentDeps[dependencyName].deleteDependency();
+          }
 
           let dependencyDefinition = newDependencies[dependencyName];
 
-          let dep = new this.dependencyTypes[dependencyDefinition.dependencyType]({
-            component, stateVariable, allStateVariablesAffected,
-            dependencyName, dependencyDefinition,
-            dependencyHandler: this,
-          });
+          let createDep = async function () {
+            let dep = new this.dependencyTypes[dependencyDefinition.dependencyType]({
+              component, stateVariable, allStateVariablesAffected,
+              dependencyName, dependencyDefinition,
+              dependencyHandler: this,
+            });
 
-          await dep.initialize();
+            await dep.initialize();
 
-          newlyCreatedDependencies.push(dep);
+
+            // dep.checkForCircular();
+
+            return dep;
+          }
+
+
+          let upCompDownDeps = this.downstreamDependencies[component.componentName];
+
+          for (let varName of allStateVariablesAffected) {
+            delete upCompDownDeps[varName][dependencyName];
+
+            Object.defineProperty(upCompDownDeps[varName], dependencyName, { get: createDep, configurable: true, enumerable: true });
+          }
+
+          // newlyCreatedDependencies.push(dep);
 
         }
       } else {
@@ -776,11 +834,12 @@ export class DependencyHandler {
 
         await dep.initialize();
 
-        newlyCreatedDependencies.push(dep);
+        // newlyCreatedDependencies.push(dep);
 
       }
     }
-    return { changedDependency, newlyCreatedDependencies };
+    return { changedDependency };
+    // return { changedDependency, newlyCreatedDependencies };
   }
 
   async checkForDependenciesOnNewComponent(componentName) {
@@ -891,10 +950,13 @@ export class DependencyHandler {
     let dependencyChanges = {};
     let dependencyUsedDefault = {};
 
-    let downDeps = this.downstreamDependencies[component.componentName][stateVariable];
+    let downDeps = this.downstreamDependencies[component.componentName][stateVariable]
+
 
     for (let dependencyName in downDeps) {
-      let { value, changes, usedDefault } = await downDeps[dependencyName].getValue();
+      let downDep = await downDeps[dependencyName];
+
+      let { value, changes, usedDefault } = await downDep.getValue();
 
       dependencyValues[dependencyName] = value;
       if (Object.keys(changes).length > 0) {
@@ -904,6 +966,7 @@ export class DependencyHandler {
         dependencyUsedDefault[dependencyName] = usedDefault;
       }
     }
+
 
     return {
       dependencyValues,
@@ -1651,7 +1714,7 @@ export class DependencyHandler {
         // if dep doesn't exist, ignore this blocker
         // and continue to resolve anything blocked by it
         try {
-          dep = this.downstreamDependencies[componentNameNewlyResolved][stateVariableNewlyResolved][dependencyNewlyResolved];
+          dep = await this.downstreamDependencies[componentNameNewlyResolved][stateVariableNewlyResolved][dependencyNewlyResolved];
         } catch (e) { }
 
         if (dep) {
@@ -1693,7 +1756,7 @@ export class DependencyHandler {
         // if dep doesn't exist, ignore this blocker
         // and continue to resolve anything blocked by it
         try {
-          dep = this.downstreamDependencies[componentNameNewlyResolved][stateVariableNewlyResolved][dependencyNewlyResolved];
+          dep = await this.downstreamDependencies[componentNameNewlyResolved][stateVariableNewlyResolved][dependencyNewlyResolved];
         } catch (e) { }
 
         if (dep) {
@@ -2464,6 +2527,7 @@ class Dependency {
       if (!upCompDownDeps[varName]) {
         upCompDownDeps[varName] = {};
       }
+      delete upCompDownDeps[varName][this.dependencyName];
       upCompDownDeps[varName][this.dependencyName] = this;
     }
 
@@ -3647,7 +3711,7 @@ class RecursiveDependencyValuesDependency extends Dependency {
           let downDeps = this.dependencyHandler.downstreamDependencies[component.componentName][varName];
 
           for (let dependencyName in downDeps) {
-            let dep = downDeps[dependencyName];
+            let dep = await downDeps[dependencyName];
             for (let [cInd, cName] of dep.downstreamComponentNames.entries()) {
               let varNames = [];
               if (dep.originalDownstreamVariableNames.length > 0 || dep.originalVariablesByComponent) {
@@ -6358,7 +6422,7 @@ class PrimaryShadowDependency extends Dependency {
     if (!primaryShadowDependencies.includes(this)) {
       primaryShadowDependencies.push(this);
     }
-    
+
     if (!component.primaryShadow) {
       return {
         success: true,
@@ -7522,7 +7586,7 @@ class DetermineDependenciesDependency extends Dependency {
         // add a blocker to recalculating the downstream dependencies of all
         // the dependencies of varName
         for (let depName in this.dependencyHandler.downstreamDependencies[this.upstreamComponentName][varName]) {
-          let dep = this.dependencyHandler.downstreamDependencies[this.upstreamComponentName][varName][depName];
+          let dep = await this.dependencyHandler.downstreamDependencies[this.upstreamComponentName][varName][depName];
           if (dep.dependencyType !== "determineDependencies") {
             await this.dependencyHandler.addBlocker({
               blockerComponentName: this.upstreamComponentName,
