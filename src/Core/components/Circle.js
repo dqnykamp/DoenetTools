@@ -2525,6 +2525,9 @@ export default class Circle extends Curve {
     radius,
     throughAngles,
     transient,
+    viaKeyboard,
+    lastPosition,
+    limits,
     actionId,
     sourceInformation = {},
     skipRendererUpdate = false,
@@ -2581,6 +2584,38 @@ export default class Circle extends Curve {
     // Note: we set skipRendererUpdate to true
     // so that we can make further adjustments before the renderers are updated
     if (transient) {
+      let largerMoveOptions;
+      if (viaKeyboard) {
+        let foundChange =
+          center[0] !== lastPosition[0] || center[1] !== lastPosition[1];
+
+        if (foundChange) {
+          let stateVariables = [];
+          let originalValues = [];
+          let requestedValues = [];
+          let limitsByStateVariable = [];
+          if (nThroughPoints <= 1 || numericalPrescribedCenter.length > 0) {
+            stateVariables.push("numericalCenter");
+            originalValues.push(lastPosition);
+            requestedValues.push(center);
+            limitsByStateVariable.push(limits);
+          }
+
+          if (nThroughPoints >= 1) {
+            stateVariables.push("numericalThroughPoints");
+            originalValues.push(await this.stateValues.numericalThroughPoints);
+            requestedValues.push(numericalThroughPoints);
+          }
+
+          largerMoveOptions = {
+            componentName: this.componentName,
+            stateVariables,
+            originalValues,
+            requestedValues,
+            limitsByStateVariable,
+          };
+        }
+      }
       await this.coreFunctions.performUpdate({
         updateInstructions: instructions,
         transient,

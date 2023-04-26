@@ -136,6 +136,14 @@ export default React.memo(function Circle(props) {
         dragged.current = true;
       }
 
+      let [xmin, ymax, xmax, ymin] = board.getBoundingBox();
+      let xminAdjusted = xmin + 0.01 * (xmax - xmin) - radiusAtDown.current;
+      let xmaxAdjusted = xmax - 0.01 * (xmax - xmin) + radiusAtDown.current;
+      let yminAdjusted = ymin + 0.01 * (ymax - ymin) - radiusAtDown.current;
+      let ymaxAdjusted = ymax - 0.01 * (ymax - ymin) + radiusAtDown.current;
+
+      let calculatedX, calculatedY;
+
       if (viaPointer) {
         // the reason we calculate point position with this algorithm,
         // rather than using .X() and .Y() directly
@@ -146,29 +154,42 @@ export default React.memo(function Circle(props) {
         // so will get modified to go back to the attracting object
 
         var o = board.origin.scrCoords;
-        let calculatedX =
+        calculatedX =
           (centerAtDown.current[1] + e.x - pointerAtDown.current[0] - o[1]) /
           board.unitX;
-        let calculatedY =
+        calculatedY =
           (o[2] - (centerAtDown.current[2] + e.y - pointerAtDown.current[1])) /
           board.unitY;
-        centerCoords.current = [calculatedX, calculatedY];
       } else {
-        centerCoords.current = [
-          newCircleJXG.center.X(),
-          newCircleJXG.center.Y(),
+        calculatedX = newCircleJXG.center.X();
+        calculatedY = newCircleJXG.center.Y();
+      }
+
+      calculatedX = Math.min(xmaxAdjusted, Math.max(xminAdjusted, calculatedX));
+      calculatedY = Math.min(ymaxAdjusted, Math.max(yminAdjusted, calculatedY));
+
+      centerCoords.current = [calculatedX, calculatedY];
+
+      let args = {
+        center: centerCoords.current,
+        radius: radiusAtDown.current,
+        throughAngles: throughAnglesAtDown.current,
+        transient: true,
+        skippable: true,
+      };
+
+      if (!viaPointer) {
+        args.viaKeyboard = true;
+        args.lastPosition = lastCenterFromCore.current;
+        args.limits = [
+          [xminAdjusted, xmaxAdjusted],
+          [yminAdjusted, ymaxAdjusted],
         ];
       }
 
       callAction({
         action: actions.moveCircle,
-        args: {
-          center: centerCoords.current,
-          radius: radiusAtDown.current,
-          throughAngles: throughAnglesAtDown.current,
-          transient: true,
-          skippable: true,
-        },
+        args,
       });
 
       newCircleJXG.center.coords.setCoordinates(JXG.COORDS_BY_USER, [
