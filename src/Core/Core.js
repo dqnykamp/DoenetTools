@@ -672,6 +672,7 @@ export default class Core {
     componentNamesToUpdate,
     sourceOfUpdate = {},
     actionId,
+    ignoreAxisLimitChangesInConstraints,
   }) {
     let deletedRenderers = [];
 
@@ -819,9 +820,25 @@ export default class Core {
           let stateValuesForRenderer = {};
           for (let stateVariable in component.state) {
             if (component.state[stateVariable].forRenderer) {
-              let value = removeFunctionsMathExpressionClass(
-                await component.state[stateVariable].value,
-              );
+              let value;
+              if (
+                Object.getOwnPropertyDescriptor(
+                  component.state[stateVariable],
+                  "value",
+                ).get
+              ) {
+                // circumventing the getter here so that can pass the attribute
+                // ignoreAxisLimitChangesInConstraints
+                value = await this.getStateVariableValue({
+                  component,
+                  stateVariable,
+                  ignoreAxisLimitChangesInConstraints,
+                });
+              } else {
+                value = await component.state[stateVariable].value;
+              }
+
+              value = removeFunctionsMathExpressionClass(value);
               // if (value !== null && typeof value === 'object') {
               //   value = new Proxy(value, readOnlyProxyHandler)
               // }
@@ -5705,7 +5722,11 @@ export default class Core {
     };
   }
 
-  async getStateVariableValue({ component, stateVariable }) {
+  async getStateVariableValue({
+    component,
+    stateVariable,
+    ignoreAxisLimitChangesInConstraints = false,
+  }) {
     // console.log(`getting value of state variable ${stateVariable} of ${component.componentName}`)
 
     let stateVarObj = component.state[stateVariable];
@@ -5728,7 +5749,11 @@ export default class Core {
 
       for (let vName in reprocessAfterEvaluate) {
         if (component.state[vName]) {
-          await this.getStateVariableValue({ component, stateVariable: vName });
+          await this.getStateVariableValue({
+            component,
+            stateVariable: vName,
+            ignoreAxisLimitChangesInConstraints,
+          });
         }
       }
 
@@ -5773,11 +5798,14 @@ export default class Core {
     let definitionArgs = await this.getStateVariableDefinitionArguments({
       component,
       stateVariable,
+      ignoreAxisLimitChangesInConstraints,
     });
     definitionArgs.componentInfoObjects = this.componentInfoObjects;
     definitionArgs.justUpdatedForNewComponent = justUpdatedForNewComponent;
 
     definitionArgs.freshnessInfo = stateVarObj.freshnessInfo;
+    definitionArgs.ignoreAxisLimitChangesInConstraints =
+      ignoreAxisLimitChangesInConstraints;
 
     // ararySize will be definited if have array or arrayEntry
     // (If have multiple state variables defined, they must be of same size)
@@ -6500,6 +6528,7 @@ export default class Core {
     component,
     stateVariable,
     excludeDependencyValues,
+    ignoreAxisLimitChangesInConstraints,
   }) {
     // console.log(`get state variable dependencies of ${component.componentName}, ${stateVariable}`)
 
@@ -6510,6 +6539,7 @@ export default class Core {
       args = await this.dependencies.getStateVariableDependencyValues({
         component,
         stateVariable,
+        ignoreAxisLimitChangesInConstraints,
       });
     }
 
@@ -9355,6 +9385,7 @@ export default class Core {
     canSkipUpdatingRenderer = false,
     skipRendererUpdate = false,
     sourceInformation = {},
+    ignoreAxisLimitChangesInConstraints = false,
     suppressToast = false, // temporary
   }) {
     if (this.flags.readOnly && !overrideReadOnly) {
@@ -9477,7 +9508,11 @@ export default class Core {
     await this.processStateVariableTriggers();
 
     if (!skipRendererUpdate) {
-      await this.updateAllChangedRenderers(sourceInformation, actionId);
+      await this.updateAllChangedRenderers(
+        sourceInformation,
+        actionId,
+        ignoreAxisLimitChangesInConstraints,
+      );
     }
 
     // TODO: when should we actually warn of unmatchedChildren
@@ -9618,7 +9653,11 @@ export default class Core {
     }
   }
 
-  async updateAllChangedRenderers(sourceInformation = {}, actionId) {
+  async updateAllChangedRenderers(
+    sourceInformation = {},
+    actionId,
+    ignoreAxisLimitChangesInConstraints,
+  ) {
     let componentNamesToUpdate = [
       ...this.updateInfo.componentsToUpdateRenderers,
     ];
@@ -9628,6 +9667,7 @@ export default class Core {
       componentNamesToUpdate,
       sourceOfUpdate: { sourceInformation, local: true },
       actionId,
+      ignoreAxisLimitChangesInConstraints,
     });
 
     // updating renderer instructions could trigger more composite updates
@@ -9647,6 +9687,7 @@ export default class Core {
         componentNamesToUpdate,
         sourceOfUpdate: { sourceInformation, local: true },
         actionId,
+        ignoreAxisLimitChangesInConstraints,
       });
     }
   }

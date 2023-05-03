@@ -951,7 +951,11 @@ export class DependencyHandler {
     return variablesChanged;
   }
 
-  async getStateVariableDependencyValues({ component, stateVariable }) {
+  async getStateVariableDependencyValues({
+    component,
+    stateVariable,
+    ignoreAxisLimitChangesInConstraints = false,
+  }) {
     let dependencyValues = {};
     let dependencyChanges = {};
     let dependencyUsedDefault = {};
@@ -962,7 +966,7 @@ export class DependencyHandler {
     for (let dependencyName in downDeps) {
       let { value, changes, usedDefault } = await downDeps[
         dependencyName
-      ].getValue();
+      ].getValue({ ignoreAxisLimitChangesInConstraints });
 
       dependencyValues[dependencyName] = value;
       if (Object.keys(changes).length > 0) {
@@ -3061,7 +3065,11 @@ class Dependency {
 
   deleteFromUpdateTriggers() {}
 
-  async getValue({ verbose = false, skipProxy = false } = {}) {
+  async getValue({
+    verbose = false,
+    skipProxy = false,
+    ignoreAxisLimitChangesInConstraints = false,
+  } = {}) {
     let value = [];
     let changes = {};
     let usedDefault = [];
@@ -3118,8 +3126,24 @@ class Dependency {
             ) {
               let mappedStateVarObj = depComponent.state[mappedVarName];
               if (!mappedStateVarObj.deferred) {
-                componentObj.stateValues[nameForOutput] =
-                  await mappedStateVarObj.value;
+                if (
+                  Object.getOwnPropertyDescriptor(
+                    depComponent.state[mappedVarName],
+                    "value",
+                  ).get
+                ) {
+                  // circumventing the getter here so that can pass the attribute
+                  // ignoreAxisLimitChangesInConstraints
+                  componentObj.stateValues[nameForOutput] =
+                    await this.dependencyHandler.core.getStateVariableValue({
+                      component: depComponent,
+                      stateVariable: mappedVarName,
+                      ignoreAxisLimitChangesInConstraints,
+                    });
+                } else {
+                  componentObj.stateValues[nameForOutput] =
+                    await mappedStateVarObj.value;
+                }
                 if (this.valuesChanged[componentInd][mappedVarName].changed) {
                   if (!changes.valuesChanged) {
                     changes.valuesChanged = {};
@@ -3515,7 +3539,10 @@ dependencyTypeArray.push(MultipleStateVariablesDependency);
 class StateVariableComponentTypeDependency extends StateVariableDependency {
   static dependencyType = "stateVariableComponentType";
 
-  async getValue({ verbose = false } = {}) {
+  async getValue({
+    verbose = false,
+    ignoreAxisLimitChangesInConstraints,
+  } = {}) {
     let value = [];
     let changes = {};
 
@@ -3549,7 +3576,23 @@ class StateVariableComponentTypeDependency extends StateVariableDependency {
           if (!depComponent.state[mappedVarName].deferred) {
             let stateVarObj = depComponent.state[mappedVarName];
             // call getter to make sure component type is set
-            await stateVarObj.value;
+
+            if (
+              Object.getOwnPropertyDescriptor(
+                depComponent.state[mappedVarName],
+                "value",
+              ).get
+            ) {
+              // circumventing the getter here so that can pass the attribute
+              // ignoreAxisLimitChangesInConstraints
+              await this.dependencyHandler.core.getStateVariableValue({
+                component: depComponent,
+                stateVariable: mappedVarName,
+                ignoreAxisLimitChangesInConstraints,
+              });
+            } else {
+              await stateVarObj.value;
+            }
             componentObj.stateValues[nameForOutput] = stateVarObj.componentType;
 
             if (stateVarObj.isArray) {
@@ -3922,7 +3965,7 @@ class RecursiveDependencyValuesDependency extends Dependency {
     };
   }
 
-  async getValue() {
+  async getValue(args) {
     this.gettingValue = true;
     this.varsWithUpdatedDeps = {};
 
@@ -3935,7 +3978,7 @@ class RecursiveDependencyValuesDependency extends Dependency {
 
     while (foundNewUpdated) {
       foundNewUpdated = false;
-      result = await super.getValue();
+      result = await super.getValue(args);
 
       if (result.changes.valuesChanged) {
         if (!changes.valuesChanged) {
@@ -4246,8 +4289,12 @@ class AttributeComponentDependency extends Dependency {
     };
   }
 
-  async getValue({ verbose } = {}) {
-    let result = await super.getValue({ verbose, skipProxy: true });
+  async getValue({ verbose, ignoreAxisLimitChangesInConstraints } = {}) {
+    let result = await super.getValue({
+      verbose,
+      skipProxy: true,
+      ignoreAxisLimitChangesInConstraints,
+    });
 
     if (result.value) {
       result.value.shadowDepth = this.shadowDepth;
@@ -4668,8 +4715,12 @@ class ChildDependency extends Dependency {
     };
   }
 
-  async getValue({ verbose } = {}) {
-    let result = await super.getValue({ verbose, skipProxy: true });
+  async getValue({ verbose, ignoreAxisLimitChangesInConstraints } = {}) {
+    let result = await super.getValue({
+      verbose,
+      skipProxy: true,
+      ignoreAxisLimitChangesInConstraints,
+    });
 
     // TODO: do we have to adjust anything else from result
     // if we add primitives to result.value?
@@ -6155,8 +6206,12 @@ class ReplacementDependency extends Dependency {
     };
   }
 
-  async getValue({ verbose } = {}) {
-    let result = await super.getValue({ verbose, skipProxy: true });
+  async getValue({ verbose, ignoreAxisLimitChangesInConstraints } = {}) {
+    let result = await super.getValue({
+      verbose,
+      skipProxy: true,
+      ignoreAxisLimitChangesInConstraints,
+    });
 
     // TODO: do we have to adjust anything else from result
     // if we add primitives to result.value?
