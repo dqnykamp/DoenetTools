@@ -244,6 +244,8 @@ export default class Core {
 
     this.essentialValuesSavedInDefinition = {};
 
+    this.ignoreAxisLimitChangesInConstraints = false;
+
     this.saveStateToDBTimerId = null;
 
     // rendererState the current state of each renderer, keyed by componentName
@@ -6515,6 +6517,9 @@ export default class Core {
 
     args.componentName = component.componentName;
 
+    args.ignoreAxisLimitChangesInConstraints =
+      this.ignoreAxisLimitChangesInConstraints;
+
     let stateVarObj = component.state[stateVariable];
     if (stateVarObj.isArrayEntry) {
       args.arrayKeys = await stateVarObj.arrayKeys;
@@ -9355,6 +9360,7 @@ export default class Core {
     canSkipUpdatingRenderer = false,
     skipRendererUpdate = false,
     sourceInformation = {},
+    ignoreAxisLimitChangesInConstraints = false,
     suppressToast = false, // temporary
   }) {
     if (this.flags.readOnly && !overrideReadOnly) {
@@ -9392,6 +9398,9 @@ export default class Core {
     let newStateVariableValuesProcessed = [];
     let workspace = {};
     let recordItemSubmissions = [];
+
+    this.ignoreAxisLimitChangesInConstraints =
+      ignoreAxisLimitChangesInConstraints;
 
     for (let instruction of updateInstructions) {
       if (instruction.componentName) {
@@ -9479,6 +9488,8 @@ export default class Core {
     if (!skipRendererUpdate) {
       await this.updateAllChangedRenderers(sourceInformation, actionId);
     }
+
+    this.ignoreAxisLimitChangesInConstraints = false;
 
     // TODO: when should we actually warn of unmatchedChildren
     // It shouldn't be just on update, but also on initial construction!
