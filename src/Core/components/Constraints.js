@@ -110,6 +110,7 @@ export default class Constraints extends BaseComponent {
     };
 
     stateVariableDefinitions.scales = {
+      additionalStateVariablesDefined: ["scalesIgnoredChanges"],
       public: true,
       shadowingInstructions: {
         createComponentOfType: "number",
@@ -129,22 +130,40 @@ export default class Constraints extends BaseComponent {
           return {};
         }
       },
-      definition({ dependencyValues }) {
+      definition({ dependencyValues, ignoreAxisLimitChangesInConstraints }) {
         if (dependencyValues.graph) {
           let SVs = dependencyValues.graph.stateValues;
           let scales = [SVs.xscale, SVs.yscale, 1];
 
-          if (scales.every((x) => Number.isFinite(x) && x > 0)) {
-            return { setValue: { scales } };
+          if (!scales.every((x) => Number.isFinite(x) && x > 0)) {
+            scales = [1, 1, 1];
+          }
+          if (ignoreAxisLimitChangesInConstraints) {
+            return {
+              setValue: { scales },
+              noChanges: ["scalesIgnoredChanges"],
+            };
+          } else {
+            return { setValue: { scales, scalesIgnoredChanges: scales } };
           }
         }
 
-        return { setValue: { scales: [1, 1, 1] } };
+        return {
+          setValue: { scales: [1, 1, 1], scalesIgnoredChanges: [1, 1, 1] },
+        };
       },
     };
 
     stateVariableDefinitions.graphXmin = {
-      additionalStateVariablesDefined: ["graphXmax", "graphYmin", "graphYmax"],
+      additionalStateVariablesDefined: [
+        "graphXmax",
+        "graphYmin",
+        "graphYmax",
+        "graphXminIgnoredChanges",
+        "graphXmaxIgnoredChanges",
+        "graphYminIgnoredChanges",
+        "graphYmaxIgnoredChanges",
+      ],
       stateVariablesDeterminingDependencies: ["graphComponentName"],
       returnDependencies({ stateValues }) {
         if (stateValues.graphComponentName) {
@@ -160,7 +179,7 @@ export default class Constraints extends BaseComponent {
           return {};
         }
       },
-      definition({ dependencyValues }) {
+      definition({ dependencyValues, ignoreAxisLimitChangesInConstraints }) {
         if (!dependencyValues.graph) {
           return {
             setValue: {
@@ -168,6 +187,10 @@ export default class Constraints extends BaseComponent {
               graphXmax: null,
               graphYmin: null,
               graphYmax: null,
+              graphXminIgnoredChanges: null,
+              graphXmaxIgnoredChanges: null,
+              graphYminIgnoredChanges: null,
+              graphYmaxIgnoredChanges: null,
             },
           };
         }
@@ -177,8 +200,15 @@ export default class Constraints extends BaseComponent {
         let graphYmax = dependencyValues.graph.stateValues.ymax;
 
         if (
-          [graphXmin, graphXmax, graphYmin, graphYmax].every(Number.isFinite)
+          ![graphXmin, graphXmax, graphYmin, graphYmax].every(Number.isFinite)
         ) {
+          graphXmin = null;
+          graphXmax = null;
+          graphYmin = null;
+          graphYmax = null;
+        }
+
+        if (ignoreAxisLimitChangesInConstraints) {
           return {
             setValue: {
               graphXmin,
@@ -186,14 +216,24 @@ export default class Constraints extends BaseComponent {
               graphYmin,
               graphYmax,
             },
+            noChanges: [
+              "graphXminIgnoredChanges",
+              "graphXmaxIgnoredChanges",
+              "graphYminIgnoredChanges",
+              "graphYmaxIgnoredChanges",
+            ],
           };
         } else {
           return {
             setValue: {
-              graphXmin: null,
-              graphXmax: null,
-              graphYmin: null,
-              graphYmax: null,
+              graphXmin,
+              graphXmax,
+              graphYmin,
+              graphYmax,
+              graphXminIgnoredChanges: graphXmin,
+              graphXmaxIgnoredChanges: graphXmax,
+              graphYminIgnoredChanges: graphYmin,
+              graphYmaxIgnoredChanges: graphYmax,
             },
           };
         }
@@ -244,6 +284,10 @@ export default class Constraints extends BaseComponent {
             dependencyType: "stateVariable",
             variableName: "scales",
           },
+          scalesIgnoredChanges: {
+            dependencyType: "stateVariable",
+            variableName: "scalesIgnoredChanges",
+          },
         };
 
         let arrayEntryPrefix = stateValues.arrayEntryPrefixForConstraints;
@@ -277,6 +321,7 @@ export default class Constraints extends BaseComponent {
         globalDependencyValues,
         dependencyValuesByKey,
         arrayKeys,
+        ignoreAxisLimitChangesInConstraints,
       }) {
         // console.log("array constraintResult definition")
         // console.log(globalDependencyValues);
@@ -298,6 +343,9 @@ export default class Constraints extends BaseComponent {
                 {
                   variables,
                   scales: globalDependencyValues.scales,
+                  scalesIgnoredChanges:
+                    globalDependencyValues.scalesIgnoredChanges,
+                  ignoreAxisLimitChangesInConstraints,
                 },
               );
 
@@ -335,6 +383,9 @@ export default class Constraints extends BaseComponent {
               constraintResult = constraintChild.stateValues.applyConstraint({
                 variables,
                 scales: globalDependencyValues.scales,
+                scalesIgnoredChanges:
+                  globalDependencyValues.scalesIgnoredChanges,
+                ignoreAxisLimitChangesInConstraints,
               });
             } else {
               constraintResult = applyConstraintFromComponentConstraints({
@@ -342,6 +393,9 @@ export default class Constraints extends BaseComponent {
                 applyComponentConstraint:
                   constraintChild.stateValues.applyComponentConstraint,
                 scales: globalDependencyValues.scales,
+                scalesIgnoredChanges:
+                  globalDependencyValues.scalesIgnoredChanges,
+                ignoreAxisLimitChangesInConstraints,
               });
             }
 
@@ -374,6 +428,7 @@ export default class Constraints extends BaseComponent {
         dependencyNamesByKey,
         stateValues,
         workspace,
+        ignoreAxisLimitChangesInConstraints,
       }) {
         // console.log('inverse definition of constraints')
         // console.log(desiredStateVariableValues);
@@ -405,6 +460,9 @@ export default class Constraints extends BaseComponent {
                 {
                   variables,
                   scales: globalDependencyValues.scales,
+                  scalesIgnoredChanges:
+                    globalDependencyValues.scalesIgnoredChanges,
+                  ignoreAxisLimitChangesInConstraints,
                 },
               );
 
@@ -464,6 +522,9 @@ export default class Constraints extends BaseComponent {
               constraintResult = constraintChild.stateValues.applyConstraint({
                 variables,
                 scales: globalDependencyValues.scales,
+                scalesIgnoredChanges:
+                  globalDependencyValues.scalesIgnoredChanges,
+                ignoreAxisLimitChangesInConstraints,
               });
             } else {
               constraintResult = applyConstraintFromComponentConstraints({
@@ -471,6 +532,9 @@ export default class Constraints extends BaseComponent {
                 applyComponentConstraint:
                   constraintChild.stateValues.applyComponentConstraint,
                 scales: globalDependencyValues.scales,
+                scalesIgnoredChanges:
+                  globalDependencyValues.scalesIgnoredChanges,
+                ignoreAxisLimitChangesInConstraints,
               });
             }
 

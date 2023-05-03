@@ -1681,6 +1681,7 @@ export default class Graph extends BlockComponent {
       actionId,
       sourceInformation,
       skipRendererUpdate,
+      ignoreAxisLimitChangesInConstraints: true,
       event: {
         verb: "interacted",
         object: {

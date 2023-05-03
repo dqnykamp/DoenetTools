@@ -61,6 +61,101 @@ export default class ConstrainToGrid extends ConstraintComponent {
       }),
     };
 
+    stateVariableDefinitions.graphXmin = {
+      additionalStateVariablesDefined: [
+        "graphXmax",
+        "graphYmin",
+        "graphYmax",
+        "graphXminIgnoredChanges",
+        "graphXmaxIgnoredChanges",
+        "graphYminIgnoredChanges",
+        "graphYmaxIgnoredChanges",
+      ],
+      returnDependencies: () => ({
+        graphAncestor: {
+          dependencyType: "ancestor",
+          componentType: "graph",
+          variableNames: ["xmin", "xmax", "ymin", "ymax"],
+        },
+      }),
+      definition({ dependencyValues, ignoreAxisLimitChangesInConstraints }) {
+        console.log("def of graphXmin", {
+          dependencyValues,
+          ignoreAxisLimitChangesInConstraints,
+        });
+        if (dependencyValues.graphAncestor === null) {
+          return {
+            setValue: {
+              graphXmin: null,
+              graphXmax: null,
+              graphYmin: null,
+              graphYmax: null,
+              graphXminIgnoredChanges: null,
+              graphXmaxIgnoredChanges: null,
+              graphYminIgnoredChanges: null,
+              graphYmaxIgnoredChanges: null,
+            },
+          };
+        }
+
+        let graphXmin = dependencyValues.graphAncestor.stateValues.xmin;
+        let graphXmax = dependencyValues.graphAncestor.stateValues.xmax;
+        let graphYmin = dependencyValues.graphAncestor.stateValues.ymin;
+        let graphYmax = dependencyValues.graphAncestor.stateValues.ymax;
+
+        if (
+          ![graphXmin, graphXmax, graphYmin, graphYmax].every(Number.isFinite)
+        ) {
+          graphXmin = null;
+          graphXmax = null;
+          graphYmin = null;
+          graphYmax = null;
+        }
+
+        if (ignoreAxisLimitChangesInConstraints) {
+          console.log("return no changes!", {
+            graphXmin,
+            graphXmax,
+            graphYmin,
+            graphYmax,
+          });
+          return {
+            setValue: {
+              graphXmin,
+              graphXmax,
+              graphYmin,
+              graphYmax,
+            },
+            noChanges: [
+              "graphXminIgnoredChanges",
+              "graphXmaxIgnoredChanges",
+              "graphYminIgnoredChanges",
+              "graphYmaxIgnoredChanges",
+            ],
+          };
+        } else {
+          console.log("changing everything to", {
+            graphXmin,
+            graphXmax,
+            graphYmin,
+            graphYmax,
+          });
+          return {
+            setValue: {
+              graphXmin,
+              graphXmax,
+              graphYmin,
+              graphYmax,
+              graphXminIgnoredChanges: graphXmin,
+              graphXmaxIgnoredChanges: graphXmax,
+              graphYminIgnoredChanges: graphYmin,
+              graphYmaxIgnoredChanges: graphYmax,
+            },
+          };
+        }
+      },
+    };
+
     // Since state variable independentComponentConstraints is true,
     // expect function applyComponentConstraint to be called with
     // a single component value as the object, for example,  {x1: 13}
@@ -98,12 +193,48 @@ export default class ConstrainToGrid extends ConstraintComponent {
         constraintAncestor: {
           dependencyType: "ancestor",
           componentType: "constraints",
-          variableNames: ["graphXmin", "graphXmax", "graphYmin", "graphYmax"],
+          variableNames: [
+            "graphXmin",
+            "graphXmax",
+            "graphYmin",
+            "graphYmax",
+            "graphXminIgnoredChanges",
+            "graphXmaxIgnoredChanges",
+            "graphYminIgnoredChanges",
+            "graphYmaxIgnoredChanges",
+          ],
         },
-        graphAncestor: {
-          dependencyType: "ancestor",
-          componentType: "graph",
-          variableNames: ["xmin", "xmax", "ymin", "ymax"],
+        graphXmin: {
+          dependencyType: "stateVariable",
+          variableName: "graphXmin",
+        },
+        graphXmax: {
+          dependencyType: "stateVariable",
+          variableName: "graphXmax",
+        },
+        graphYmin: {
+          dependencyType: "stateVariable",
+          variableName: "graphYmin",
+        },
+        graphYmax: {
+          dependencyType: "stateVariable",
+          variableName: "graphYmax",
+        },
+        graphXminIgnoredChanges: {
+          dependencyType: "stateVariable",
+          variableName: "graphXminIgnoredChanges",
+        },
+        graphXmaxIgnoredChanges: {
+          dependencyType: "stateVariable",
+          variableName: "graphXmaxIgnoredChanges",
+        },
+        graphYminIgnoredChanges: {
+          dependencyType: "stateVariable",
+          variableName: "graphYminIgnoredChanges",
+        },
+        graphYmaxIgnoredChanges: {
+          dependencyType: "stateVariable",
+          variableName: "graphYmaxIgnoredChanges",
         },
         ignoreGraphBounds: {
           dependencyType: "stateVariable",
@@ -112,17 +243,22 @@ export default class ConstrainToGrid extends ConstraintComponent {
       }),
       definition: ({ dependencyValues }) => ({
         setValue: {
-          applyComponentConstraint: function ({ variables, scales }) {
+          applyComponentConstraint: function ({
+            variables,
+            ignoreAxisLimitChangesInConstraints,
+          }) {
+            console.log("apply comp const", {
+              variables,
+              dependencyValues,
+              ignoreAxisLimitChangesInConstraints,
+            });
             let ancestor;
             if (
               dependencyValues.constraintAncestor !== null &&
               dependencyValues.constraintAncestor.stateValues.graphXmin !== null
             ) {
               ancestor = "constraints";
-            } else if (
-              dependencyValues.graphAncestor !== null &&
-              dependencyValues.graphAncestor.stateValues.xmin !== null
-            ) {
+            } else if (dependencyValues.graphXmin !== null) {
               ancestor = "graph";
             }
 
@@ -145,13 +281,29 @@ export default class ConstrainToGrid extends ConstraintComponent {
                   // if in a graph, exclude grid points outside graph bounds
                   let xmin, xmax;
                   if (ancestor === "constraints") {
-                    xmin =
-                      dependencyValues.constraintAncestor.stateValues.graphXmin;
-                    xmax =
-                      dependencyValues.constraintAncestor.stateValues.graphXmax;
+                    if (ignoreAxisLimitChangesInConstraints) {
+                      xmin =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphXminIgnoredChanges;
+                      xmax =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphXmaxIgnoredChanges;
+                    } else {
+                      xmin =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphXmin;
+                      xmax =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphXmax;
+                    }
                   } else if (ancestor === "graph") {
-                    xmin = dependencyValues.graphAncestor.stateValues.xmin;
-                    xmax = dependencyValues.graphAncestor.stateValues.xmax;
+                    if (ignoreAxisLimitChangesInConstraints) {
+                      xmin = dependencyValues.graphXminIgnoredChanges;
+                      xmax = dependencyValues.graphXmaxIgnoredChanges;
+                    } else {
+                      xmin = dependencyValues.graphXmin;
+                      xmax = dependencyValues.graphXmax;
+                    }
                   }
                   if (xmin !== undefined) {
                     if (x1constrained < xmin) {
@@ -191,13 +343,29 @@ export default class ConstrainToGrid extends ConstraintComponent {
                   // if in a graph, exclude grid points outside graph bounds
                   let ymin, ymax;
                   if (ancestor === "constraints") {
-                    ymin =
-                      dependencyValues.constraintAncestor.stateValues.graphYmin;
-                    ymax =
-                      dependencyValues.constraintAncestor.stateValues.graphYmax;
+                    if (ignoreAxisLimitChangesInConstraints) {
+                      ymin =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphYminIgnoredChanges;
+                      ymax =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphYmaxIgnoredChanges;
+                    } else {
+                      ymin =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphYmin;
+                      ymax =
+                        dependencyValues.constraintAncestor.stateValues
+                          .graphYmax;
+                    }
                   } else if (ancestor === "graph") {
-                    ymin = dependencyValues.graphAncestor.stateValues.ymin;
-                    ymax = dependencyValues.graphAncestor.stateValues.ymax;
+                    if (ignoreAxisLimitChangesInConstraints) {
+                      ymin = dependencyValues.graphYminIgnoredChanges;
+                      ymax = dependencyValues.graphYmaxIgnoredChanges;
+                    } else {
+                      ymin = dependencyValues.graphYmin;
+                      ymax = dependencyValues.graphYmax;
+                    }
                   }
                   if (ymin !== undefined) {
                     if (x2constrained < ymin) {
