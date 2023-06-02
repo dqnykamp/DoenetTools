@@ -28,7 +28,7 @@ import {
   viewerDoenetMLAtom,
   updateTextEditorDoenetMLAtom,
 } from "../../../_sharedRecoil/EditorViewerRecoil";
-import { cidFromText } from "doenetml";
+import { cidFromText } from "@doenet/doenetml";
 
 export const currentDraftSelectedAtom = atom({
   key: "currentDraftSelectedAtom",

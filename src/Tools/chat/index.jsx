@@ -5,7 +5,7 @@ import ToolRoot from "@ToolRoot";
 
 import Chat from "./Chat";
 import { MathJaxContext } from "better-react-mathjax";
-import { mathjaxConfig } from "doenetml";
+import { mathjaxConfig } from "@doenet/doenetml";
 
 const root = createRoot(document.getElementById("root"));
 root.render(

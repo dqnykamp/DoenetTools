@@ -22,7 +22,7 @@ import DoenetML, {
   retrieveTextFileForCid,
   determineNumberOfActivityVariants,
   parseActivityDefinition,
-} from "doenetml";
+} from "@doenet/doenetml";
 import {
   itemByDoenetId,
   courseIdAtom,

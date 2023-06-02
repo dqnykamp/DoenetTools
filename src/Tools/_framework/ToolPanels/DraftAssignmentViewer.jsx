@@ -10,7 +10,9 @@ import {
 import { searchParamAtomFamily, profileAtom } from "../NewToolRoot";
 
 import axios from "axios";
-import DoenetML, { returnNumberOfActivityVariantsForCid } from "doenetml";
+import DoenetML, {
+  returnNumberOfActivityVariantsForCid,
+} from "@doenet/doenetml";
 import {
   itemByDoenetId,
   courseIdAtom,

@@ -17,7 +17,7 @@ import {
 import Logo from "../Logo";
 import { pageToolViewAtom, searchParamAtomFamily } from "../NewToolRoot";
 import Checkbox from "../../../_reactComponents/PanelHeaderComponents/Checkbox";
-import { darkModeAtom } from "doenetml";
+import { darkModeAtom } from "@doenet/doenetml";
 // import Logo from '../Logo';
 
 export const selectedMenuPanelAtom = atom({

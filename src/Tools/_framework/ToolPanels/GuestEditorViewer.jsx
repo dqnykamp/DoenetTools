@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import DoenetML, {
   retrieveTextFileForCid,
   parseActivityDefinition,
-} from "doenetml";
+} from "@doenet/doenetml";
 import useEventListener from "../../../_utils/hooks/useEventListener";
 import {
   useRecoilValue,

@@ -27,7 +27,7 @@ import {
   apiURLs,
   currentAttemptNumber,
 } from "../ToolPanels/AssignmentViewer";
-import DoenetML from "doenetml";
+import DoenetML from "@doenet/doenetml";
 import { effectivePermissionsByCourseId } from "../../../_reactComponents/PanelHeaderComponents/RoleDropdown";
 import { coursePermissionsAndSettingsByCourseId } from "../../../_reactComponents/Course/CourseActions";
 

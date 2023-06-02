@@ -5,7 +5,7 @@ import {
   calculateOrderAndVariants,
   determineNumberOfActivityVariants,
   parseActivityDefinition,
-} from "doenetml";
+} from "@doenet/doenetml";
 
 onmessage = function (e) {
   if (e.data.messageType === "prerenderActivity") {

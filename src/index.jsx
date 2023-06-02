@@ -10,7 +10,7 @@ import { createRoot } from "react-dom/client";
 
 import ToolRoot from "./Tools/_framework/NewToolRoot";
 import { MathJaxContext } from "better-react-mathjax";
-import { mathjaxConfig } from "doenetml";
+import { mathjaxConfig } from "@doenet/doenetml";
 // import DarkmodeController from "./Tools/_framework/DarkmodeController";
 import {
   loader as communityLoader,

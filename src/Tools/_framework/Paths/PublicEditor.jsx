@@ -15,7 +15,7 @@ import {
 
 // import styled from "styled-components";
 // import Button from "../../../_reactComponents/PanelHeaderComponents/Button";
-import DoenetML, { CodeMirror } from "doenetml";
+import DoenetML, { CodeMirror } from "@doenet/doenetml";
 
 import {
   Alert,
@@ -42,7 +42,7 @@ import {
 import { BsGripVertical, BsPlayBtnFill } from "react-icons/bs";
 import { RxUpdate } from "react-icons/rx";
 import axios from "axios";
-import { cidFromText } from "doenetml";
+import { cidFromText } from "@doenet/doenetml";
 import { pageToolViewAtom } from "../NewToolRoot";
 import { useRecoilState } from "recoil";
 import { apiURLs } from "../ToolPanels/AssignmentViewer";

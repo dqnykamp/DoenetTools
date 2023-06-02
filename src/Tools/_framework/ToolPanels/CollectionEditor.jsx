@@ -24,7 +24,7 @@ import {
   returnAllPossibleVariants,
   serializedComponentsReplacer,
   serializedComponentsReviver,
-} from "doenetml";
+} from "@doenet/doenetml";
 import { csvGroups } from "../Menus/GroupSettings";
 
 export default function CollectionEditor() {

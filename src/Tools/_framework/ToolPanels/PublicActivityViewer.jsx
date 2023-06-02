@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import DoenetML from "doenetml";
+import DoenetML from "@doenet/doenetml";
 import { useRecoilValue } from "recoil";
 import { searchParamAtomFamily } from "../NewToolRoot";
 import { useLocation, useNavigate } from "react-router";
