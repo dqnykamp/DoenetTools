@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import DoenetML, {
+import {
+  DoenetML,
   retrieveTextFileForCid,
   parseActivityDefinition,
 } from "@doenet/doenetml";

@@ -3,7 +3,7 @@ import { useLoaderData, useLocation, useNavigate } from "react-router";
 import styled from "styled-components";
 import Button from "../../../_reactComponents/PanelHeaderComponents/Button";
 import { checkIfUserClearedOut } from "../../../_utils/applicationUtils";
-import DoenetML from "@doenet/doenetml";
+import { DoenetML } from "@doenet/doenetml";
 import {
   pageVariantInfoAtom,
   pageVariantPanelAtom,

@@ -18,7 +18,8 @@ import {
 } from "../NewToolRoot";
 import axios from "axios";
 import { prng_alea } from "esm-seedrandom";
-import DoenetML, {
+import {
+  DoenetML,
   retrieveTextFileForCid,
   determineNumberOfActivityVariants,
   parseActivityDefinition,

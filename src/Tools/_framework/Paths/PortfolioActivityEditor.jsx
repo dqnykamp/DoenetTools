@@ -8,7 +8,7 @@ import {
 
 // import styled from "styled-components";
 // import Button from "../../../_reactComponents/PanelHeaderComponents/Button";
-import DoenetML, { CodeMirror } from "@doenet/doenetml";
+import { DoenetML, CodeMirror, cidFromText } from "@doenet/doenetml";
 
 import { useSetRecoilState } from "recoil";
 import {
@@ -77,7 +77,6 @@ import { useDropzone } from "react-dropzone";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { GoKebabVertical } from "react-icons/go";
 import { useSaveDraft } from "../../../_utils/hooks/useSaveDraft";
-import { cidFromText } from "@doenet/doenetml";
 import { textEditorDoenetMLAtom } from "../../../_sharedRecoil/EditorViewerRecoil";
 import { HiOutlineX, HiPlus } from "react-icons/hi";
 // import Select from "react-select";

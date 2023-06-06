@@ -17,7 +17,8 @@ import {
 import Logo from "../Logo";
 import { pageToolViewAtom, searchParamAtomFamily } from "../NewToolRoot";
 import Checkbox from "../../../_reactComponents/PanelHeaderComponents/Checkbox";
-import { darkModeAtom } from "@doenet/doenetml";
+// import { darkModeAtom } from "@doenet/doenetml";
+
 // import Logo from '../Logo';
 
 export const selectedMenuPanelAtom = atom({
@@ -270,7 +271,8 @@ export default function MenuPanel({
   const hideLinks = useRecoilValue(searchParamAtomFamily("hideLinks"));
 
   //These maintain the panels' state
-  const [darkModeToggle, setDarkModeToggle] = useRecoilState(darkModeAtom);
+  // const [darkModeToggle, setDarkModeToggle] = useRecoilState(darkModeAtom);
+  const [darkModeToggle, setDarkModeToggle] = useState(null);
   const currentSelectionMenu = useRecoilValue(selectedMenuPanelAtom);
   const setPageToolView = useSetRecoilState(pageToolViewAtom);
   let menusArray = [];

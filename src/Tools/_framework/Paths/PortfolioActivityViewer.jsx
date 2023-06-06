@@ -8,7 +8,7 @@ import {
 } from "react-router";
 import styled from "styled-components";
 // import Button from "../../../_reactComponents/PanelHeaderComponents/Button";
-import DoenetML from "@doenet/doenetml";
+import { DoenetML } from "@doenet/doenetml";
 import {
   pageVariantInfoAtom,
   pageVariantPanelAtom,

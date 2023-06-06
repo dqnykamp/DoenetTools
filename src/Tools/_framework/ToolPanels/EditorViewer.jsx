@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import DoenetML, { cidFromText } from "@doenet/doenetml";
+import { DoenetML, cidFromText } from "@doenet/doenetml";
 import useEventListener from "../../../_utils/hooks/useEventListener";
 import {
   useRecoilValue,
