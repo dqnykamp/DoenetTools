@@ -5,7 +5,7 @@ import { useRecoilValue } from "recoil";
 import { pageToolViewAtom } from "../../Tools/_framework/NewToolRoot";
 import { itemByDoenetId } from "../../_reactComponents/Course/CourseActions";
 import { getURLFromRef, scrollableContainerAtom } from "../PageViewer";
-import useDoenetRender from "../useDoenetRenderer";
+import useDoenetRenderer from "../useDoenetRenderer";
 import styled from "styled-components";
 
 // const LinkStyling = styled.a`
@@ -46,7 +46,8 @@ const RefButton = styled.button`
 `;
 
 export default React.memo(function Ref(props) {
-  let { name, id, SVs, children } = useDoenetRender(props);
+  let { name, id, SVs, children, location, navigate } =
+    useDoenetRenderer(props);
 
   const pageToolView = useRecoilValue(pageToolViewAtom);
   const itemInCourse = useRecoilValue(itemByDoenetId(SVs.doenetId));
