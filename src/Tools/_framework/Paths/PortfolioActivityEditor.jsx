@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { redirect, useLoaderData } from "react-router";
 import CodeMirror from "../CodeMirror";
 
-import PageViewer from "../../../Viewer/PageViewer";
+import { ActivityViewer } from "../../../Viewer/ActivityViewer";
 import Papa from "papaparse";
 
 import { useSetRecoilState } from "recoil";
@@ -75,6 +75,7 @@ import { useCourse } from "../../../_reactComponents/Course/CourseActions";
 import VirtualKeyboard from "../Footers/VirtualKeyboard";
 import VariantSelect from "../ChakraBasedComponents/VariantSelect";
 import ErrorWarningPopovers from "../ChakraBasedComponents/ErrorWarningPopovers";
+import { useLocation, useNavigate } from "react-router";
 
 export async function action({ params, request }) {
   const formData = await request.formData();
@@ -1317,6 +1318,9 @@ export function PortfolioActivityEditor() {
   let inTheMiddleOfSaving = useRef(false);
   let postponedSaving = useRef(false);
 
+  let navigate = useNavigate();
+  let location = useLocation();
+
   const { saveDraft } = useSaveDraft();
 
   const handleSaveDraft = useCallback(async () => {
@@ -1408,15 +1412,18 @@ export function PortfolioActivityEditor() {
   });
   // console.log("variants", variants);
 
-  function variantCallback(generatedVariantInfo, allPossibleVariants) {
-    // console.log(">>>variantCallback",generatedVariantInfo,allPossibleVariants)
-    const cleanGeneratedVariant = JSON.parse(
-      JSON.stringify(generatedVariantInfo),
-    );
-    setVariants({
-      index: cleanGeneratedVariant.index,
-      allPossibleVariants,
-    });
+  function variantCallback({ pageVariant, activityVariant }) {
+    if (pageVariant) {
+      setVariants({
+        index: Number(pageVariant.index),
+        allPossibleVariants: pageVariant.allPossibleVariants,
+      });
+    } else if (activityVariant) {
+      setVariants({
+        index: Number(activityVariant.variantIndex),
+        allPossibleVariants: activityVariant.allPossibleVariants,
+      });
+    }
   }
 
   return (
@@ -1638,7 +1645,7 @@ export function PortfolioActivityEditor() {
                         w="100%"
                       >
                         <>
-                          <PageViewer
+                          <ActivityViewer
                             doenetML={viewerDoenetML}
                             flags={{
                               showCorrectness: true,
@@ -1659,7 +1666,9 @@ export function PortfolioActivityEditor() {
                             setErrorsAndWarningsCallback={
                               setErrorsAndWarningsCallback
                             }
-                            pageIsActive={true}
+                            paginate={true}
+                            location={location}
+                            navigate={navigate}
                           />
                           <Box marginBottom="50vh" />
                         </>
@@ -1815,7 +1824,7 @@ export function PortfolioActivityEditor() {
                       w="100%"
                     >
                       <>
-                        <PageViewer
+                        <ActivityViewer
                           doenetML={viewerDoenetML}
                           flags={{
                             showCorrectness: true,
@@ -1833,7 +1842,9 @@ export function PortfolioActivityEditor() {
                           generatedVariantCallback={variantCallback} //TODO:Replace
                           requestedVariantIndex={variants.index}
                           // setIsInErrorState={setIsInErrorState}
-                          pageIsActive={true}
+                          paginate={true}
+                          location={location}
+                          navigate={navigate}
                         />
                         <Box marginBottom="50vh" />
                       </>

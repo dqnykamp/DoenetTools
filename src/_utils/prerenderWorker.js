@@ -32,7 +32,7 @@ async function prerenderActivity({ cid, doenetId, flags = {} }) {
 
   let activityDefinition = parseResult.activityJSON;
 
-  let { numberOfVariants } = await determineNumberOfActivityVariants(
+  let { numVariants } = await determineNumberOfActivityVariants(
     activityDefinition,
   );
 
@@ -43,8 +43,8 @@ async function prerenderActivity({ cid, doenetId, flags = {} }) {
   const variantsNeededByPage = {};
   const doenetMLByPage = {};
 
-  for (let variantIndex = 1; variantIndex <= numberOfVariants; variantIndex++) {
-    console.log(`Gathering ${variantIndex} of ${numberOfVariants}`);
+  for (let variantIndex = 1; variantIndex <= numVariants; variantIndex++) {
+    console.log(`Gathering ${variantIndex} of ${numVariants}`);
 
     let result = await calculateOrderAndVariants({
       activityDefinition,
@@ -77,7 +77,7 @@ async function prerenderActivity({ cid, doenetId, flags = {} }) {
       postMessage({
         messageType: "status",
         stage: "Gathering",
-        complete: variantIndex / numberOfVariants,
+        complete: variantIndex / numVariants,
       });
     }
   }

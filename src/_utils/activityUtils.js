@@ -21,7 +21,12 @@ export function parseActivityDefinition(activityDefDoenetML) {
     serializedDefinition.length !== 1 ||
     serializedDefinition[0].componentType !== "document"
   ) {
-    return { success: false, message: `Invalid activity definition` };
+    serializedDefinition = [
+      {
+        componentType: "document",
+        children: serializedDefinition,
+      },
+    ];
   }
 
   serializedDefinition = serializedDefinition[0];
@@ -41,7 +46,7 @@ export function parseActivityDefinition(activityDefDoenetML) {
 
   let xmlns;
 
-  if (documentProps.type.toLowerCase() === "activity") {
+  if (documentProps.type?.toLowerCase() === "activity") {
     let jsonDefinition = {
       type: "activity",
     };
@@ -94,9 +99,9 @@ export function parseActivityDefinition(activityDefDoenetML) {
       console.warn("no xmlns of activity!");
     }
 
-    if (documentProps.numberofvariants) {
-      jsonDefinition.numberOfVariants = Number(documentProps.numberofvariants);
-      delete documentProps.numberofvariants;
+    if (documentProps.numvariants) {
+      jsonDefinition.numVariants = Number(documentProps.numvariants);
+      delete documentProps.numvariants;
     }
 
     if (Object.keys(documentProps).length > 0) {
@@ -125,7 +130,7 @@ export function parseActivityDefinition(activityDefDoenetML) {
     jsonDefinition.order = result.order;
 
     return { success: true, activityJSON: jsonDefinition };
-  } else if (documentProps.type.toLowerCase() === "page") {
+  } else {
     let page = { type: "page", doenetML: activityDefDoenetML };
 
     let jsonDefinition = {
@@ -160,8 +165,6 @@ export function parseActivityDefinition(activityDefDoenetML) {
     // That way, we could preserve the exact variants specified in the page definition
 
     return { success: true, activityJSON: jsonDefinition };
-  } else {
-    return { success: false, message: `Invalid activity definition` };
   }
 
   function validateOrder(order) {
@@ -204,7 +207,12 @@ export function parseActivityDefinition(activityDefDoenetML) {
 
     let content = [];
     for (let child of orderChildren) {
-      if (child.componentType.toLowerCase() === "order") {
+      if (typeof child === "string") {
+        return {
+          success: false,
+          message: `invalid child of <order>, found string`,
+        };
+      } else if (child.componentType.toLowerCase() === "order") {
         let result = validateOrder(child);
         if (result.success) {
           content.push(result.order);
@@ -221,7 +229,7 @@ export function parseActivityDefinition(activityDefDoenetML) {
       } else {
         return {
           success: false,
-          message: `invalid child of order, found type: ${child.componentType}`,
+          message: `invalid child of <order>, found type: <${child.componentType}>`,
         };
       }
     }
@@ -266,7 +274,7 @@ export function parseActivityDefinition(activityDefDoenetML) {
     if (page.children.length > 0) {
       let pageDoenetML = activityDefDoenetML.slice(
         page.doenetMLrange.openEnd,
-        page.doenetMLrange.closeBegin,
+        page.doenetMLrange.closeBegin - 1,
       );
 
       if (page.children[0].componentType?.toLowerCase() !== "document") {
@@ -297,9 +305,9 @@ export async function calculateOrderAndVariants({
   );
 
   let variantIndex =
-    ((requestedVariantIndex - 1) % activityVariantResult.numberOfVariants) + 1;
+    ((requestedVariantIndex - 1) % activityVariantResult.numVariants) + 1;
   if (variantIndex < 1) {
-    variantIndex += activityVariantResult.numberOfVariants;
+    variantIndex += activityVariantResult.numVariants;
   }
 
   if (!Number.isFinite(variantIndex)) {
@@ -364,31 +372,29 @@ export async function calculateOrderAndVariants({
   let variantForEachPage;
 
   let allPossiblePerPage = [];
-  let numberOfVariantsPerPage = [];
+  let numVariantsPerPage = [];
 
   for (let pageResult of pageVariantsResult) {
     allPossiblePerPage.push(pageResult.allPossibleVariants);
-    numberOfVariantsPerPage.push(pageResult.allPossibleVariants.length);
+    numVariantsPerPage.push(pageResult.allPossibleVariants.length);
   }
 
-  let numberOfPageVariantCombinations = numberOfVariantsPerPage.reduce(
+  let numberOfPageVariantCombinations = numVariantsPerPage.reduce(
     (a, c) => a * c,
     1,
   );
 
-  if (
-    numberOfPageVariantCombinations <= activityVariantResult.numberOfVariants
-  ) {
+  if (numberOfPageVariantCombinations <= activityVariantResult.numVariants) {
     let pageVariantCombinationIndex =
       ((variantIndex - 1) % numberOfPageVariantCombinations) + 1;
 
     variantForEachPage = enumerateCombinations({
-      numberOfOptionsByIndex: numberOfVariantsPerPage,
+      numberOfOptionsByIndex: numVariantsPerPage,
       maxNumber: pageVariantCombinationIndex,
     })[pageVariantCombinationIndex - 1].map((x) => x + 1);
   } else {
     variantForEachPage = [...Array(nPages).keys()].map(
-      (i) => Math.floor(rng() * numberOfVariantsPerPage[i]) + 1,
+      (i) => Math.floor(rng() * numVariantsPerPage[i]) + 1,
     );
   }
 
@@ -425,7 +431,7 @@ export async function calculateOrderAndVariants({
     orderWithCids,
     variantsByPage,
     itemWeights,
-    numberOfVariants: activityVariantResult.numberOfVariants,
+    numVariants: activityVariantResult.numVariants,
     previousComponentTypeCounts,
   };
 
@@ -441,13 +447,13 @@ export async function calculateOrderAndVariants({
 }
 
 export async function determineNumberOfActivityVariants(activityDefinition) {
-  let numberOfVariants = 1000;
+  let numVariants = 1000;
   let pageVariantsResult = null;
 
-  if (activityDefinition.numberOfVariants !== undefined) {
-    numberOfVariants = activityDefinition.numberOfVariants;
-    if (!(Number.isInteger(numberOfVariants) && numberOfVariants >= 1)) {
-      numberOfVariants = 1000;
+  if (activityDefinition.numVariants !== undefined) {
+    numVariants = activityDefinition.numVariants;
+    if (!(Number.isInteger(numVariants) && numVariants >= 1)) {
+      numVariants = 1000;
     }
   } else if (
     (activityDefinition.order.behavior === undefined ||
@@ -468,15 +474,15 @@ export async function determineNumberOfActivityVariants(activityDefinition) {
 
     pageVariantsResult = await Promise.all(promises);
 
-    numberOfVariants = pageVariantsResult.reduce(
+    numVariants = pageVariantsResult.reduce(
       (a, c) => a * c.allPossibleVariants.length,
       1,
     );
 
-    numberOfVariants = Math.min(1000, numberOfVariants);
+    numVariants = Math.min(1000, numVariants);
   }
 
-  return { numberOfVariants, pageVariantsResult };
+  return { numVariants, pageVariantsResult };
 }
 
 export async function returnNumberOfActivityVariantsForCid(cid) {
@@ -490,7 +496,7 @@ export async function returnNumberOfActivityVariantsForCid(cid) {
 
   result = await determineNumberOfActivityVariants(result.activityJSON);
 
-  return { success: true, numberOfVariants: result.numberOfVariants };
+  return { success: true, numVariants: result.numVariants };
 }
 
 function determineOrder(order, rng) {

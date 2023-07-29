@@ -1,5 +1,4 @@
 import React from "react";
-import { useLocation, useNavigate } from "react-router";
 import { Link } from "react-router-dom";
 import { useRecoilValue } from "recoil";
 import { pageToolViewAtom } from "../../Tools/_framework/NewToolRoot";
@@ -53,8 +52,8 @@ export default React.memo(function Ref(props) {
   const itemInCourse = useRecoilValue(itemByDoenetId(SVs.doenetId));
   const scrollableContainer = useRecoilValue(scrollableContainerAtom);
 
-  let { search, pathname } = useLocation();
-  let navigate = useNavigate();
+  let search = location.search || "";
+  let pathname = location.pathname || "";
 
   if (SVs.hidden) {
     return null;

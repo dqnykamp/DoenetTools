@@ -1,19 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import { retrieveTextFileForCid } from "../Core/utils/retrieveTextFile";
-import PageViewer, { scrollableContainerAtom } from "./PageViewer";
+import { PageViewer, scrollableContainerAtom } from "./PageViewer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { get as idb_get, set as idb_set } from "idb-keyval";
 import { cidFromText } from "../Core/utils/cid";
-import { useToast, toastType } from "@Toast";
 import { nanoid } from "nanoid";
 import {
   calculateOrderAndVariants,
   parseActivityDefinition,
 } from "../_utils/activityUtils";
 import VisibilitySensor from "react-visibility-sensor-v2";
-import { useLocation, useNavigate } from "react-router";
 import {
   atom,
   useRecoilCallback,
@@ -25,44 +23,22 @@ import ActionButton from "../_reactComponents/PanelHeaderComponents/ActionButton
 import ButtonGroup from "../_reactComponents/PanelHeaderComponents/ButtonGroup";
 import { pageToolViewAtom } from "../Tools/_framework/NewToolRoot";
 import { clear as idb_clear } from "idb-keyval";
+import { cesc } from "../_utils/url";
+import { returnAllPossibleVariants } from "../Core/utils/returnAllPossibleVariants";
 
-export const saveStateToDBTimerIdAtom = atom({
-  key: "saveStateToDBTimerIdAtom",
-  default: null,
-});
+const sendAlert = (msg, type) => console.log(msg);
 
-export const currentPageAtom = atom({
-  key: "currentPageAtom",
-  default: 0,
-});
-
-export const activityAttemptNumberSetUpAtom = atom({
-  key: "activityAttemptNumberSetUpAtom",
-  default: 0,
-});
-
-export const itemWeightsAtom = atom({
-  key: "itemWeightsAtom",
-  default: [],
-});
-
-export default function ActivityViewer(props) {
-  const toast = useToast();
+export function ActivityViewer(props) {
   const setPageToolView = useSetRecoilState(pageToolViewAtom);
 
   const [errMsg, setErrMsg] = useState(null);
 
   const [
-    {
-      cidFromProps,
-      activityDefinitionFromProps,
-      attemptNumber,
-      requestedVariantIndex,
-    },
+    { cidFromProps, doenetMLFromProps, attemptNumber, requestedVariantIndex },
     setInfoFromProps,
   ] = useState({
     cidFromProps: null,
-    activityDefinitionFromProps: null,
+    doenetMLFromProps: null,
     attemptNumber: null,
     requestedVariantIndex: null,
   });
@@ -74,7 +50,7 @@ export default function ActivityViewer(props) {
   const cidRef = useRef(null);
   cidRef.current = cid;
 
-  const activityDefinitionDoenetML = useRef(null);
+  const doenetML = useRef(null);
 
   const [activityDefinition, setActivityDefinition] = useState(null);
 
@@ -95,18 +71,16 @@ export default function ActivityViewer(props) {
   const [flags, setFlags] = useState(props.flags);
 
   const [currentPage, setCurrentPage] = useState(0);
-  const setRecoilCurrentPage = useSetRecoilState(currentPageAtom);
   const currentPageRef = useRef(currentPage); // so that event listener can get new current page
   currentPageRef.current = currentPage; // so updates on every refresh
 
-  const setActivityAttemptNumberSetUp = useSetRecoilState(
-    activityAttemptNumberSetUpAtom,
-  );
+  const [activityAttemptNumberSetUp, setActivityAttemptNumberSetUp] =
+    useState(0);
 
   const [nPages, setNPages] = useState(0);
 
   const [variantsByPage, setVariantsByPage] = useState(null);
-  const [itemWeights, setItemWeights] = useRecoilState(itemWeightsAtom);
+  const [itemWeights, setItemWeights] = useState([]);
   const previousComponentTypeCountsByPage = useRef([]);
 
   const serverSaveId = useRef(null);
@@ -114,7 +88,7 @@ export default function ActivityViewer(props) {
   const activityStateToBeSavedToDatabase = useRef(null);
   const changesToBeSaved = useRef(false);
 
-  const setSaveStateToDBTimerId = useSetRecoilState(saveStateToDBTimerIdAtom);
+  const saveStateToDBTimerId = useRef(null);
   const [scrollableContainer, setScrollableContainer] = useRecoilState(
     scrollableContainerAtom,
   );
@@ -138,7 +112,7 @@ export default function ActivityViewer(props) {
   const ignoreNextScroll = useRef(false);
   const stillNeedToScrollTo = useRef(null);
 
-  let location = useLocation();
+  let location = props.location || {};
   let hash = location.hash;
   const previousLocations = useRef({});
   const currentLocationKey = useRef(null);
@@ -148,7 +122,14 @@ export default function ActivityViewer(props) {
     useState(false);
   const [processingSubmitAll, setProcessingSubmitAll] = useState(false);
 
-  let navigate = useNavigate();
+  const updateActivityStatusCallback = props.updateActivityStatusCallback;
+
+  let navigate = props.navigate;
+
+  let activityPrefix = "";
+  if (props.idsIncludeActivityId) {
+    activityPrefix = cesc(props.activityId);
+  }
 
   useEffect(() => {
     return () => {
@@ -156,6 +137,19 @@ export default function ActivityViewer(props) {
       viewerWasUnmounted.current = true;
     };
   }, []);
+
+  useEffect(() => {
+    updateActivityStatusCallback?.({
+      itemWeights,
+      currentPage,
+      activityAttemptNumberSetUp,
+    });
+  }, [
+    updateActivityStatusCallback,
+    itemWeights,
+    currentPage,
+    activityAttemptNumberSetUp,
+  ]);
 
   useEffect(() => {
     let newFlags = { ...props.flags };
@@ -231,7 +225,6 @@ export default function ActivityViewer(props) {
 
             if (topPage && topPage !== currentPageRef.current) {
               setCurrentPage(topPage);
-              setRecoilCurrentPage(topPage);
             }
           }
         });
@@ -250,7 +243,6 @@ export default function ActivityViewer(props) {
         let newPage = Math.max(1, Math.min(nPages, match[1]));
         if (newPage !== currentPage) {
           setCurrentPage(newPage);
-          setRecoilCurrentPage(newPage);
         }
       }
     }
@@ -270,7 +262,7 @@ export default function ActivityViewer(props) {
 
           navigateAttrs.state = { doNotScroll: true };
         }
-        navigate(location.search + pageAnchor, navigateAttrs);
+        navigate?.(location.search + pageAnchor, navigateAttrs);
       }
       if (stillNeedToScrollTo.current) {
         document.getElementById(stillNeedToScrollTo.current)?.scrollIntoView();
@@ -336,13 +328,14 @@ export default function ActivityViewer(props) {
     // since the <Link> from react router doesn't seem to scroll into hashes
     // always scroll to the hash the first time we get a location from a <Link>
     if (
+      hash &&
       !location.state?.doNotScroll &&
       (location.key === "default" || !foundNewInPrevious)
     ) {
       let scrollTo = hash.slice(1);
       if (props.paginate && hash.match(/^#page(\d+)$/)) {
         // if paginate, want to scroll to top of activity so can still see page controls
-        scrollTo = "activityTop";
+        scrollTo = `${activityPrefix}top`;
       }
       if (
         props.paginate &&
@@ -355,22 +348,14 @@ export default function ActivityViewer(props) {
     }
   }, [location]);
 
-  const getValueOfTimeoutWithoutARefresh = useRecoilCallback(
-    ({ snapshot }) =>
-      async () => {
-        return await snapshot.getPromise(saveStateToDBTimerIdAtom);
-      },
-    [saveStateToDBTimerIdAtom],
-  );
-
   function resetActivity({ changedOnDevice, newCid, newAttemptNumber }) {
     console.log("resetActivity", changedOnDevice, newCid, newAttemptNumber);
 
     if (newAttemptNumber !== attemptNumber) {
       if (props.updateAttemptNumber) {
-        toast(
+        sendAlert(
           `Reverted activity as attempt number changed on other device`,
-          toastType.ERROR,
+          "info",
         );
         props.updateAttemptNumber(newAttemptNumber);
       } else {
@@ -392,7 +377,7 @@ export default function ActivityViewer(props) {
       // we ignore the change
     }
 
-    // toast(`Reverted page to state saved on device ${changedOnDevice}`, toastType.ERROR);
+    // sendAlert(`Reverted page to state saved on device ${changedOnDevice}`, "error");
 
     // if (cid && newCid !== cid) {
     //   if (props.setIsInErrorState) {
@@ -411,40 +396,40 @@ export default function ActivityViewer(props) {
   }
 
   function calculateCidDefinition() {
-    if (activityDefinitionFromProps) {
+    if (typeof doenetMLFromProps === "string" || !cidFromProps) {
       if (cidFromProps) {
-        // check to see if activityDefinition matches cid
-        cidFromText(JSON.stringify(activityDefinitionFromProps)).then(
-          (calcCid) => {
-            if (calcCid === cidFromProps) {
-              setCid(cidFromProps);
-              activityDefinitionDoenetML.current = activityDefinitionFromProps;
-              let result = parseActivityDefinition(activityDefinitionFromProps);
-              if (result.success) {
-                setActivityDefinition(result.activityJSON);
-                setStage("continue");
-              } else {
-                if (props.setIsInErrorState) {
-                  props.setIsInErrorState(true);
-                }
-                setErrMsg(result.message);
-              }
+        // check to see if doenetML matches cid
+        cidFromText(JSON.stringify(doenetMLFromProps)).then((calcCid) => {
+          if (calcCid === cidFromProps) {
+            setCid(cidFromProps);
+            doenetML.current = doenetMLFromProps;
+            let result = parseActivityDefinition(doenetMLFromProps);
+            if (result.success) {
+              setActivityDefinition(result.activityJSON);
+              setStage("continue");
             } else {
               if (props.setIsInErrorState) {
                 props.setIsInErrorState(true);
               }
-              setErrMsg(
-                `activity definition did not match specified cid: ${cidFromProps}`,
-              );
+              setErrMsg(result.message);
             }
-          },
-        );
+          } else {
+            if (props.setIsInErrorState) {
+              props.setIsInErrorState(true);
+            }
+            setErrMsg(
+              `activity definition did not match specified cid: ${cidFromProps}`,
+            );
+          }
+        });
       } else {
-        // if have activityDefinition and no cid, then calculate cid
-        cidFromText(JSON.stringify(activityDefinitionFromProps)).then((cid) => {
+        // if have no cid, then calculate cid
+        const doenetMLOrEmptyString =
+          typeof doenetMLFromProps === "string" ? doenetMLFromProps : "";
+        cidFromText(JSON.stringify(doenetMLOrEmptyString)).then((cid) => {
           setCid(cid);
-          activityDefinitionDoenetML.current = activityDefinitionFromProps;
-          let result = parseActivityDefinition(activityDefinitionFromProps);
+          doenetML.current = doenetMLOrEmptyString;
+          let result = parseActivityDefinition(doenetMLOrEmptyString);
           if (result.success) {
             setActivityDefinition(result.activityJSON);
             setStage("continue");
@@ -457,12 +442,12 @@ export default function ActivityViewer(props) {
         });
       }
     } else {
-      // if don't have activityDefinition, then retrieve activityDefinition from cid
+      // if have cid but not doenetML, then retrieve doenetML from cid
 
       retrieveTextFileForCid(cidFromProps, "doenet")
         .then((retrievedActivityDefinition) => {
           setCid(cidFromProps);
-          activityDefinitionDoenetML.current = retrievedActivityDefinition;
+          doenetML.current = retrievedActivityDefinition;
           let result = parseActivityDefinition(retrievedActivityDefinition);
           if (result.success) {
             setActivityDefinition(result.activityJSON);
@@ -489,17 +474,19 @@ export default function ActivityViewer(props) {
     let newVariantIndex;
     let loadedFromInitialState = false;
 
-    if (props.flags.allowLocalState) {
+    if (flags.allowLocalState) {
       let localInfo;
 
       try {
-        localInfo = await idb_get(`${props.doenetId}|${attemptNumber}|${cid}`);
+        localInfo = await idb_get(
+          `${props.activityId}|${attemptNumber}|${cid}`,
+        );
       } catch (e) {
         // ignore error
       }
 
       if (localInfo) {
-        if (props.flags.allowSaveState) {
+        if (flags.allowSaveState) {
           // attempt to save local info to database,
           // reseting data to that from database if it has changed since last save
 
@@ -524,7 +511,7 @@ export default function ActivityViewer(props) {
             // if just the localInfo changed, use that instead
             localInfo = result.newLocalInfo;
 
-            // no need to send toast, as state is just page number
+            // no need to send sendAlert, as state is just page number
           }
         }
 
@@ -534,10 +521,9 @@ export default function ActivityViewer(props) {
         // if hash doesn't already specify a page, set page from activityState
         if (!hash?.match(/^#page(\d+)/)) {
           setCurrentPage(localInfo.activityState.currentPage);
-          setRecoilCurrentPage(localInfo.activityState.currentPage);
         }
 
-        // activityInfo is orderWithCids, variantsByPage, itemWeights, and numberOfVariants
+        // activityInfo is orderWithCids, variantsByPage, itemWeights, and numVariants
         let newActivityInfo = localInfo.activityInfo;
         newVariantIndex = localInfo.variantIndex;
         setVariantIndex(newVariantIndex);
@@ -566,41 +552,43 @@ export default function ActivityViewer(props) {
         params: {
           cid,
           attemptNumber,
-          doenetId: props.doenetId,
+          activityId: props.activityId,
           userId: props.userId,
-          allowLoadState: props.flags.allowLoadState,
+          allowLoadState: flags.allowLoadState,
         },
       };
 
       let resp;
 
-      try {
-        resp = await axios.get("/api/loadActivityState.php", payload);
+      if (props.apiURLs?.loadActivityState) {
+        try {
+          resp = await axios.get(props.apiURLs.loadActivityState, payload);
 
-        if (!resp.data.success) {
-          if (props.flags.allowLoadState) {
+          if (!resp.data.success) {
+            if (flags.allowLoadState) {
+              if (props.setIsInErrorState) {
+                props.setIsInErrorState(true);
+              }
+              setErrMsg(`Error loading activity state: ${resp.data.message}`);
+              return;
+            } else {
+              // ignore this error if didn't allow loading of page state
+            }
+          }
+        } catch (e) {
+          if (flags.allowLoadState) {
             if (props.setIsInErrorState) {
               props.setIsInErrorState(true);
             }
-            setErrMsg(`Error loading activity state: ${resp.data.message}`);
+            setErrMsg(`Error loading activity state: ${e.message}`);
             return;
           } else {
             // ignore this error if didn't allow loading of page state
           }
         }
-      } catch (e) {
-        if (props.flags.allowLoadState) {
-          if (props.setIsInErrorState) {
-            props.setIsInErrorState(true);
-          }
-          setErrMsg(`Error loading activity state: ${e.message}`);
-          return;
-        } else {
-          // ignore this error if didn't allow loading of page state
-        }
       }
 
-      if (resp.data.loadedState) {
+      if (resp?.data.loadedState) {
         let newActivityInfo = JSON.parse(resp.data.activityInfo);
         let activityState = JSON.parse(resp.data.activityState);
 
@@ -608,10 +596,9 @@ export default function ActivityViewer(props) {
         // if hash doesn't already specify a page, set page from activityState
         if (!hash?.match(/^#page(\d+)/)) {
           setCurrentPage(activityState.currentPage);
-          setRecoilCurrentPage(activityState.currentPage);
         }
 
-        // activityInfo is orderWithCids, variantsByPage, itemWeights, and numberOfVariants
+        // activityInfo is orderWithCids, variantsByPage, itemWeights, and numVariants
         newVariantIndex = resp.data.variantIndex;
         setVariantIndex(newVariantIndex);
         setNPages(newActivityInfo.orderWithCids.length);
@@ -633,7 +620,6 @@ export default function ActivityViewer(props) {
         // if hash doesn't already specify a page, set page to 1
         if (!hash?.match(/^#page(\d+)/)) {
           setCurrentPage(1);
-          setRecoilCurrentPage(1);
         }
 
         let results;
@@ -668,8 +654,12 @@ export default function ActivityViewer(props) {
   }
 
   async function saveLoadedLocalStateToDatabase(localInfo) {
+    if (!flags.allowSaveState || !props.apiURLs?.saveActivityState) {
+      return;
+    }
+
     let serverSaveId = await idb_get(
-      `${props.doenetId}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${props.activityId}|${attemptNumber}|${cid}|ServerSaveId`,
     );
 
     let activityStateToBeSavedToDatabase = {
@@ -678,7 +668,7 @@ export default function ActivityViewer(props) {
       activityState: JSON.stringify(localInfo.activityState),
       variantIndex: localInfo.variantIndex,
       attemptNumber,
-      doenetId: props.doenetId,
+      activityId: props.activityId,
       saveId: localInfo.saveId,
       serverSaveId,
       updateDataOnContentChange: props.updateDataOnContentChange,
@@ -692,7 +682,7 @@ export default function ActivityViewer(props) {
         activityStateToBeSavedToDatabase,
       );
       resp = await axios.post(
-        "/api/saveActivityState.php",
+        props.apiURLs.saveActivityState,
         activityStateToBeSavedToDatabase,
       );
     } catch (e) {
@@ -701,7 +691,7 @@ export default function ActivityViewer(props) {
     }
 
     if (resp.data.cidChanged === true) {
-      props.cidChangedCallback();
+      props?.cidChangedCallback();
     }
 
     let data = resp.data;
@@ -712,7 +702,7 @@ export default function ActivityViewer(props) {
     }
 
     await idb_set(
-      `${props.doenetId}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${props.activityId}|${attemptNumber}|${cid}|ServerSaveId`,
       data.saveId,
     );
 
@@ -725,7 +715,7 @@ export default function ActivityViewer(props) {
       };
 
       await idb_set(
-        `${props.doenetId}|${data.attemptNumber}|${data.cid}`,
+        `${props.activityId}|${data.attemptNumber}|${data.cid}`,
         newLocalInfo,
       );
 
@@ -744,7 +734,7 @@ export default function ActivityViewer(props) {
     overrideThrottle = false,
     overrideStage = false,
   } = {}) {
-    if (!props.flags.allowSaveState && !props.flags.allowLocalState) {
+    if (!flags.allowSaveState && !flags.allowLocalState) {
       return;
     }
 
@@ -763,9 +753,9 @@ export default function ActivityViewer(props) {
 
     let saveId = nanoid();
 
-    if (props.flags.allowLocalState) {
+    if (flags.allowLocalState) {
       await idb_set(
-        `${props.doenetId}|${attemptNumberRef.current}|${cidRef.current}`,
+        `${props.activityId}|${attemptNumberRef.current}|${cidRef.current}`,
         {
           activityInfo: activityInfo.current,
           activityState: { currentPage: currentPageRef.current },
@@ -775,7 +765,7 @@ export default function ActivityViewer(props) {
       );
     }
 
-    if (!props.flags.allowSaveState) {
+    if (!flags.allowSaveState) {
       return;
     }
 
@@ -785,7 +775,7 @@ export default function ActivityViewer(props) {
       activityState: JSON.stringify({ currentPage: currentPageRef.current }),
       variantIndex: variantIndexRef.current,
       attemptNumber: attemptNumberRef.current,
-      doenetId: props.doenetId,
+      activityId: props.activityId,
       saveId,
       serverSaveId: serverSaveId.current,
       updateDataOnContentChange: props.updateDataOnContentChange,
@@ -802,7 +792,11 @@ export default function ActivityViewer(props) {
   async function saveChangesToDatabase(overrideThrottle) {
     // throttle save to database at 60 seconds
 
-    if (!changesToBeSaved.current) {
+    if (
+      !changesToBeSaved.current ||
+      !flags.allowSaveState ||
+      !props.apiURLs?.saveActivityState
+    ) {
       return;
     }
 
@@ -810,7 +804,7 @@ export default function ActivityViewer(props) {
 
     // just use the ref
 
-    let oldTimeoutId = await getValueOfTimeoutWithoutARefresh();
+    let oldTimeoutId = saveStateToDBTimerId.current;
 
     if (oldTimeoutId !== null) {
       if (overrideThrottle) {
@@ -824,23 +818,13 @@ export default function ActivityViewer(props) {
     pageAtPreviousSaveToDatabase.current = currentPageRef.current;
 
     // check for changes again after 60 seconds
-    let newTimeoutId = setTimeout(() => {
-      setSaveStateToDBTimerId(null);
+    saveStateToDBTimerId.current = setTimeout(() => {
+      saveStateToDBTimerId.current = null;
       saveChangesToDatabase();
     }, 60000);
 
-    setSaveStateToDBTimerId(newTimeoutId);
-
     // TODO: find out how to test if not online
-    // and send this toast if not online:
-
-    // postMessage({
-    //   messageType: "sendToast",
-    //   args: {
-    //     message: "You're not connected to the internet. Changes are not saved. ",
-    //     toastType: toastType.ERROR
-    //   }
-    // })
+    // and send this sendAlert if not online:
 
     let resp;
 
@@ -850,16 +834,16 @@ export default function ActivityViewer(props) {
         activityStateToBeSavedToDatabase.current,
       );
       resp = await axios.post(
-        "/api/saveActivityState.php",
+        props.apiURLs.saveActivityState,
         activityStateToBeSavedToDatabase.current,
       );
     } catch (e) {
       console.log(
-        `sending toast: Error synchronizing data.  Changes not saved to the server.`,
+        `sending sendAlert: Error synchronizing data.  Changes not saved to the server.`,
       );
-      toast(
+      sendAlert(
         "Error synchronizing data.  Changes not saved to the server.",
-        toastType.ERROR,
+        "error",
       );
       return;
     }
@@ -868,11 +852,11 @@ export default function ActivityViewer(props) {
 
     if (resp.status === null) {
       console.log(
-        `sending toast: Error synchronizing data.  Changes not saved to the server.  Are you connected to the internet?`,
+        `sending sendAlert: Error synchronizing data.  Changes not saved to the server.  Are you connected to the internet?`,
       );
-      toast(
+      sendAlert(
         "Error synchronizing data.  Changes not saved to the server.  Are you connected to the internet?",
-        toastType.ERROR,
+        "error",
       );
       return;
     }
@@ -880,16 +864,16 @@ export default function ActivityViewer(props) {
     let data = resp.data;
 
     if (!data.success) {
-      console.log(`sending toast: ${data.message}`);
-      toast(data.message, toastType.ERROR);
+      console.log(`sending sendAlert: ${data.message}`);
+      sendAlert(data.message, "error");
       return;
     }
 
     serverSaveId.current = data.saveId;
 
-    if (props.flags.allowLocalState) {
+    if (flags.allowLocalState) {
       await idb_set(
-        `${props.doenetId}|${attemptNumberRef.current}|${cidRef.current}|ServerSaveId`,
+        `${props.activityId}|${attemptNumberRef.current}|${cidRef.current}|ServerSaveId`,
         data.saveId,
       );
     }
@@ -921,29 +905,29 @@ export default function ActivityViewer(props) {
 
   async function initializeUserAssignmentTables(newItemWeights) {
     //Initialize user_assignment tables
-    if (flags.allowSaveSubmissions) {
+    if (flags.allowSaveSubmissions && props.apiURLs?.initAssignmentAttempt) {
       try {
-        let resp = await axios.post("/api/initAssignmentAttempt.php", {
-          doenetId: props.doenetId,
+        let resp = await axios.post(props.apiURLs.initAssignmentAttempt, {
+          activityId: props.activityId,
           weights: newItemWeights,
           attemptNumber,
         });
 
         if (resp.status === null) {
-          toast(
+          sendAlert(
             `Could not initialize assignment tables.  Are you connected to the internet?`,
-            toastType.ERROR,
+            "error",
           );
         } else if (!resp.data.success) {
-          toast(
+          sendAlert(
             `Could not initialize assignment tables: ${resp.data.message}.`,
-            toastType.ERROR,
+            "error",
           );
         }
       } catch (e) {
-        toast(
+        sendAlert(
           `Could not initialize assignment tables: ${e.message}.`,
-          toastType.ERROR,
+          "error",
         );
       }
     }
@@ -955,21 +939,7 @@ export default function ActivityViewer(props) {
       setStage("saving");
     }
 
-    // check if cid changed
-    try {
-      let resp = await axios.get("/api/checkForChangedAssignment.php", {
-        params: {
-          currentCid: cid,
-          doenetId: props.doenetId,
-        },
-      });
-
-      if (resp.data.cidChanged === true) {
-        props.cidChangedCallback();
-      }
-    } catch (e) {
-      // ignore any errors
-    }
+    props.checkIfCidChanged?.(cid);
 
     if (viewerWasUnmounted.current) {
       await saveState({ overrideThrottle: true, overrideStage: true });
@@ -978,7 +948,6 @@ export default function ActivityViewer(props) {
 
   function clickNext() {
     setCurrentPage((was) => Math.min(nPages, was + 1));
-    setRecoilCurrentPage((was) => Math.min(nPages, was + 1));
 
     let event = {
       verb: "interacted",
@@ -992,7 +961,6 @@ export default function ActivityViewer(props) {
 
   function clickPrevious() {
     setCurrentPage((was) => Math.max(1, was - 1));
-    setRecoilCurrentPage((was) => Math.max(1, was - 1));
 
     let event = {
       verb: "interacted",
@@ -1005,12 +973,12 @@ export default function ActivityViewer(props) {
   }
 
   function recordEvent(event) {
-    if (!flags.allowSaveEvents) {
+    if (!flags.allowSaveEvents || !props.apiURLs?.recordEvent) {
       return;
     }
 
     const payload = {
-      doenetId: props.doenetId,
+      activityId: props.activityId,
       activityCid: cid,
       attemptNumber,
       activityVariantIndex: variantIndex,
@@ -1023,19 +991,12 @@ export default function ActivityViewer(props) {
     };
 
     axios
-      .post("/api/recordEvent.php", payload)
+      .post(props.apiURLs.recordEvent, payload)
       .then((resp) => {
         // console.log(">>>>Activity Viewer resp",resp.data)
       })
       .catch((e) => {
         console.error(`Error saving event: ${e.message}`);
-        // postMessage({
-        //   messageType: "sendToast",
-        //   args: {
-        //     message: `Error saving event: ${e.message}`,
-        //     toastType: toastType.ERROR
-        //   }
-        // })
       });
   }
 
@@ -1135,6 +1096,11 @@ export default function ActivityViewer(props) {
 
     await saveState({ overrideThrottle: true });
 
+    props.setActivityAsCompleted?.(itemWeights);
+
+    // TODO: the below should be moved into setActivityAsCompleted
+    // so we dn't hardcode URIs here
+
     // console.log("activityInfo here",activityInfo)
 
     //Clear out history of exam if canViewAfterCompleted setting set as false
@@ -1146,7 +1112,7 @@ export default function ActivityViewer(props) {
     }
     //Set assignment as completed for the user in the Data Base and Recoil
     let resp = await axios.get("/api/saveCompleted.php", {
-      params: { doenetId: props.doenetId, isCompleted: true },
+      params: { activityId: props.activityId, isCompleted: true },
     });
     // console.log("resp",resp.data)
     if (resp.data.success) {
@@ -1160,7 +1126,7 @@ export default function ActivityViewer(props) {
           tool: "endExam",
           view: "",
           params: {
-            doenetId: props.doenetId,
+            activityId: props.activityId,
             attemptNumber,
             itemWeights: itemWeights.join(","),
           },
@@ -1229,7 +1195,7 @@ export default function ActivityViewer(props) {
   }
 
   if (
-    activityDefinitionFromProps !== props.activityDefinition ||
+    doenetMLFromProps !== props.doenetML ||
     cidFromProps !== props.cid ||
     propAttemptNumber !== attemptNumber ||
     requestedVariantIndex !== adjustedRequestedVariantIndex
@@ -1237,7 +1203,7 @@ export default function ActivityViewer(props) {
     settingUp.current = true;
 
     setInfoFromProps({
-      activityDefinitionFromProps: props.activityDefinition,
+      doenetMLFromProps: props.doenetML,
       cidFromProps: props.cid,
       attemptNumber: propAttemptNumber,
       requestedVariantIndex: adjustedRequestedVariantIndex,
@@ -1284,10 +1250,40 @@ export default function ActivityViewer(props) {
         }
         setStage("continue");
         setActivityAttemptNumberSetUp(attemptNumber);
-        props.generatedVariantCallback?.(
-          results.newVariantIndex,
-          activityInfo.current.numberOfVariants,
-        );
+
+        let allPossibleVariants;
+        if (
+          activityDefinition.numVariants === undefined &&
+          (activityDefinition.order.behavior === undefined ||
+            activityDefinition.order.behavior === "sequence") &&
+          activityDefinition.order.content.length === 1 &&
+          activityDefinition.order.content[0].type === "page"
+        ) {
+          // if have a single page, then use the names of the variants
+          // defined for that page (rather than the default of numbering them)
+          let page = activityDefinition.order.content[0];
+
+          allPossibleVariants = (
+            await returnAllPossibleVariants({
+              cid: page.cid,
+              doenetML: page.doenetML,
+            })
+          ).allPossibleVariants;
+        }
+
+        if (!allPossibleVariants) {
+          allPossibleVariants = [
+            ...Array(activityInfo.current.numVariants).keys(),
+          ].map((i) => String(i + 1));
+        }
+
+        props.generatedVariantCallback?.({
+          activityVariant: {
+            variantIndex: results.newVariantIndex,
+            numVariants: activityInfo.current.numVariants,
+            allPossibleVariants,
+          },
+        });
       }
       settingUp.current = false;
     });
@@ -1328,12 +1324,12 @@ export default function ActivityViewer(props) {
         thisPageIsActive = pageInfo.pageIsActive[ind];
       }
 
-      let prefixForIds = nPages > 1 ? `page${ind + 1}` : "";
+      let prefixForIds = activityPrefix + (nPages > 1 ? `page${ind + 1}` : "");
 
       let pageViewer = (
         <PageViewer
           userId={props.userId}
-          doenetId={props.doenetId}
+          activityId={props.activityId}
           activityCid={cid}
           cid={page.cid}
           doenetML={page.doenetML}
@@ -1349,9 +1345,11 @@ export default function ActivityViewer(props) {
           forceShowCorrectness={props.forceShowCorrectness}
           forceShowSolution={props.forceShowSolution}
           forceUnsuppressCheckwork={props.forceUnsuppressCheckwork}
+          // generatedVariantCallback={props.generatedVariantCallback}
           flags={flags}
           activityVariantIndex={variantIndex}
           requestedVariantIndex={variantsByPage[ind]}
+          setErrorsAndWarningsCallback={props.setErrorsAndWarningsCallback}
           updateCreditAchievedCallback={props.updateCreditAchievedCallback}
           setIsInErrorState={props.setIsInErrorState}
           updateAttemptNumber={props.updateAttemptNumber}
@@ -1363,6 +1361,9 @@ export default function ActivityViewer(props) {
           renderersInitializedCallback={() => pageRenderedCallback(ind)}
           hideWhenNotCurrent={props.paginate}
           prefixForIds={prefixForIds}
+          apiURLs={props.apiURLs}
+          location={location}
+          navigate={navigate}
         />
       );
 
@@ -1515,7 +1516,11 @@ export default function ActivityViewer(props) {
   }
 
   return (
-    <div style={{ paddingBottom: "50vh" }} id="activityTop" ref={nodeRef}>
+    <div
+      style={{ paddingBottom: "50vh" }}
+      id={`${activityPrefix}top`}
+      ref={nodeRef}
+    >
       {pageControlsTop}
       {title}
       {pages}

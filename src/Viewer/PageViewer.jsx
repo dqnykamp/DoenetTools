@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
-import { useToast, toastType } from "@Toast";
 import {
   serializedComponentsReplacer,
   serializedComponentsReviver,
@@ -14,7 +13,6 @@ import { cidFromText } from "../Core/utils/cid";
 import { retrieveTextFileForCid } from "../Core/utils/retrieveTextFile";
 import axios from "axios";
 import { returnAllPossibleVariants } from "../Core/utils/returnAllPossibleVariants";
-import { useLocation, useNavigate } from "react-router";
 import { pageToolViewAtom } from "../Tools/_framework/NewToolRoot";
 import { itemByDoenetId } from "../_reactComponents/Course/CourseActions";
 import { darkModeAtom } from "../Tools/_framework/DarkmodeController";
@@ -30,6 +28,8 @@ export const scrollableContainerAtom = atom({
   default: null,
 });
 
+const sendAlert = (msg, type) => console.log(msg);
+
 // Two notes about props.flags of PageViewer
 // 1. In Core, flags.allowSaveState implies flags.allowLoadState
 // Rationale: saving state will result in loading a new state if another device changed it,
@@ -37,8 +37,7 @@ export const scrollableContainerAtom = atom({
 // 2. In Core, if props.userId is defined, both
 // flags.allowLocalState and flags.allowSaveState are set to false
 
-export default function PageViewer(props) {
-  const toast = useToast();
+export function PageViewer(props) {
   const updateRendererSVsWithRecoil = useRecoilCallback(
     ({ snapshot, set }) =>
       async ({
@@ -169,16 +168,16 @@ export default function PageViewer(props) {
   const darkMode = useRecoilValue(darkModeAtom);
 
   const pageToolView = useRecoilValue(pageToolViewAtom);
-  const itemInCourse = useRecoilValue(itemByDoenetId(props.doenetId));
-  const scrollableContainer = useRecoilValue(scrollableContainerAtom);
+  const itemInCourse = useRecoilValue(itemByDoenetId(props.activityId));
+  // const scrollableContainer = useRecoilValue(scrollableContainerAtom);
 
   // Note: useRef for location
   // to make sure get current value of location in navigateToHash
   const location = useRef(null);
 
-  let navigate = useNavigate();
+  let navigate = props.navigate;
 
-  location.current = useLocation();
+  location.current = props.location || {};
   let hash = location.current.hash;
 
   useEffect(() => {
@@ -240,9 +239,9 @@ export default function PageViewer(props) {
           props.updateCreditAchievedCallback?.(e.data.args);
         } else if (e.data.messageType === "savedState") {
           props.saveStateCallback?.();
-        } else if (e.data.messageType === "sendToast") {
-          console.log(`Sending toast message: ${e.data.args.message}`);
-          toast(e.data.args.message, e.data.args.toastType);
+        } else if (e.data.messageType === "sendAlert") {
+          console.log(`Sending alert message: ${e.data.args.message}`);
+          sendAlert(e.data.args.message, e.data.args.alertType);
         } else if (e.data.messageType === "resolveAction") {
           resolveAction(e.data.args);
         } else if (e.data.messageType === "returnAllStateVariables") {
@@ -597,13 +596,16 @@ export default function PageViewer(props) {
     coreInfo.current = args.coreInfo;
 
     if (props.generatedVariantCallback) {
-      props.generatedVariantCallback(
-        JSON.parse(
-          coreInfo.current.generatedVariantString,
-          serializedComponentsReviver,
-        ),
-        coreInfo.current.allPossibleVariants,
-      );
+      props.generatedVariantCallback({
+        pageVariant: {
+          variantInfo: JSON.parse(
+            coreInfo.current.generatedVariantString,
+            serializedComponentsReviver,
+          ),
+          allPossibleVariants: coreInfo.current.allPossibleVariants,
+          itemNumber: props.itemNumber,
+        },
+      });
     }
 
     let renderPromises = [];
@@ -631,6 +633,8 @@ export default function PageViewer(props) {
             flags: props.flags,
             coreId: coreId.current,
             callAction,
+            navigate,
+            location,
           }),
         );
 
@@ -692,9 +696,9 @@ export default function PageViewer(props) {
     // console.log('resetPage', changedOnDevice, newCid, newAttemptNumber);
 
     if (newAttemptNumber !== attemptNumber) {
-      toast(
+      sendAlert(
         `Reverted activity as attempt number changed on other device`,
-        toastType.ERROR,
+        "info",
       );
       if (props.updateAttemptNumber) {
         props.updateAttemptNumber(newAttemptNumber);
@@ -709,9 +713,9 @@ export default function PageViewer(props) {
       }
     } else {
       // TODO: are there cases where will get an infinite loop here?
-      toast(
+      sendAlert(
         `Reverted page to state saved on device ${changedOnDevice}`,
-        toastType.ERROR,
+        "info",
       );
 
       coreId.current = nanoid();
@@ -789,7 +793,7 @@ export default function PageViewer(props) {
 
       try {
         localInfo = await idb_get(
-          `${props.doenetId}|${pageNumber}|${attemptNumber}|${cid}`,
+          `${props.activityId}|${pageNumber}|${attemptNumber}|${cid}`,
         );
       } catch (e) {
         // ignore error
@@ -821,11 +825,11 @@ export default function PageViewer(props) {
             // if just the localInfo changed, use that instead
             localInfo = result.newLocalInfo;
             console.log(
-              `sending toast: Reverted page to state saved on device ${result.changedOnDevice}`,
+              `sending alert: Reverted page to state saved on device ${result.changedOnDevice}`,
             );
-            toast(
+            sendAlert(
               `Reverted page to state saved on device ${result.changedOnDevice}`,
-              toastType.ERROR,
+              "info",
             );
           }
         }
@@ -859,7 +863,7 @@ export default function PageViewer(props) {
       }
     }
 
-    if (!loadedState) {
+    if (!loadedState && props.apiURLs?.loadPageState) {
       // if didn't load state from local storage, try to load from database
 
       // even if allowLoadState is false,
@@ -870,7 +874,7 @@ export default function PageViewer(props) {
           cid,
           pageNumber,
           attemptNumber,
-          doenetId: props.doenetId,
+          activityId: props.activityId,
           userId: props.userId,
           requestedVariantIndex,
           allowLoadState: props.flags.allowLoadState,
@@ -883,7 +887,7 @@ export default function PageViewer(props) {
       };
 
       try {
-        let resp = await axios.get("/api/loadPageState.php", payload);
+        let resp = await axios.get(props.apiURLs.loadPageState, payload);
         if (!resp.data.success) {
           if (props.flags.allowLoadState) {
             if (props.setIsInErrorState) {
@@ -957,8 +961,12 @@ export default function PageViewer(props) {
   }
 
   async function saveLoadedLocalStateToDatabase(localInfo) {
+    if (!props.flags.allowSaveState || !props.apiURLs?.savePageState) {
+      return;
+    }
+
     let serverSaveId = await idb_get(
-      `${props.doenetId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${props.activityId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
     );
 
     let pageStateToBeSavedToDatabase = {
@@ -977,7 +985,7 @@ export default function PageViewer(props) {
       ),
       pageNumber,
       attemptNumber,
-      doenetId: props.doenetId,
+      activityId: props.activityId,
       saveId: localInfo.saveId,
       serverSaveId,
       updateDataOnContentChange: props.updateDataOnContentChange,
@@ -987,7 +995,7 @@ export default function PageViewer(props) {
 
     try {
       resp = await axios.post(
-        "/api/savePageState.php",
+        props.apiURLs.savePageState,
         pageStateToBeSavedToDatabase,
       );
     } catch (e) {
@@ -1003,7 +1011,7 @@ export default function PageViewer(props) {
     }
 
     await idb_set(
-      `${props.doenetId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${props.activityId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
       data.saveId,
     );
 
@@ -1019,7 +1027,7 @@ export default function PageViewer(props) {
       };
 
       await idb_set(
-        `${props.doenetId}|${pageNumber}|${data.attemptNumber}|${data.cid}`,
+        `${props.activityId}|${pageNumber}|${data.attemptNumber}|${data.cid}`,
         newLocalInfo,
       );
 
@@ -1054,7 +1062,7 @@ export default function PageViewer(props) {
         coreId: coreId.current,
         userId: props.userId,
         doenetML,
-        doenetId: props.doenetId,
+        activityId: props.activityId,
         previousComponentTypeCounts: props.previousComponentTypeCounts,
         activityCid: props.activityCid,
         flags: props.flags,
@@ -1070,6 +1078,7 @@ export default function PageViewer(props) {
         stateVariableChanges: initialCoreData.current.coreState
           ? initialCoreData.current.coreState
           : undefined,
+        apiURLs: props.apiURLs,
       },
     });
 
@@ -1170,7 +1179,7 @@ export default function PageViewer(props) {
         // let stateObj = { fromLink: true }
         // Object.defineProperty(stateObj, 'previousScrollPosition', { get: () => scrollableContainer?.[scrollAttribute], enumerable: true });
 
-        navigate(url);
+        navigate?.(url);
       }
     }
 
