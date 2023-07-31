@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ActivityViewer } from "../../Viewer/ActivityViewer.jsx";
+import { DoenetML } from "../../Viewer/DoenetML";
 import testCodeDoenetML from "./testCode.doenet?raw";
 import { MathJaxContext } from "better-react-mathjax";
 import { mathjaxConfig } from "../../Core/utils/math.js";
@@ -369,7 +369,7 @@ function Test() {
   }
 
   let viewer = (
-    <ActivityViewer
+    <DoenetML
       key={"activityViewer" + updateNumber}
       doenetML={doenetML}
       // cid={"bafkreigruw4fxnisjul3oer255qd5mqxaqmbp7j2rywmkzoyg7wfoxzduq"}
