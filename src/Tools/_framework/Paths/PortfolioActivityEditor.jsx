@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { redirect, useLoaderData } from "react-router";
 import CodeMirror from "../CodeMirror";
 
-import { ActivityViewer } from "../../../Viewer/ActivityViewer";
+import { DoenetML } from "../../../Viewer/DoenetML";
 import Papa from "papaparse";
 
 import { useSetRecoilState } from "recoil";
@@ -72,7 +72,6 @@ import { textEditorDoenetMLAtom } from "../../../_sharedRecoil/EditorViewerRecoi
 import { HiOutlineX, HiPlus } from "react-icons/hi";
 // import Select from "react-select";
 import { useCourse } from "../../../_reactComponents/Course/CourseActions";
-import VirtualKeyboard from "../Footers/VirtualKeyboard";
 import VariantSelect from "../ChakraBasedComponents/VariantSelect";
 import ErrorWarningPopovers from "../ChakraBasedComponents/ErrorWarningPopovers";
 import { useLocation, useNavigate } from "react-router";
@@ -1435,7 +1434,6 @@ export function PortfolioActivityEditor() {
         activityData={activityData}
         controlsTabsLastIndex={controlsTabsLastIndex}
       />
-      <VirtualKeyboard />
 
       <Grid
         background="doenet.lightBlue"
@@ -1645,7 +1643,7 @@ export function PortfolioActivityEditor() {
                         w="100%"
                       >
                         <>
-                          <ActivityViewer
+                          <DoenetML
                             doenetML={viewerDoenetML}
                             flags={{
                               showCorrectness: true,
@@ -1670,7 +1668,6 @@ export function PortfolioActivityEditor() {
                             location={location}
                             navigate={navigate}
                           />
-                          <Box marginBottom="50vh" />
                         </>
                       </Box>
                     </VStack>
@@ -1824,7 +1821,7 @@ export function PortfolioActivityEditor() {
                       w="100%"
                     >
                       <>
-                        <ActivityViewer
+                        <DoenetML
                           doenetML={viewerDoenetML}
                           flags={{
                             showCorrectness: true,
@@ -1846,7 +1843,6 @@ export function PortfolioActivityEditor() {
                           location={location}
                           navigate={navigate}
                         />
-                        <Box marginBottom="50vh" />
                       </>
                     </Box>
                   </VStack>

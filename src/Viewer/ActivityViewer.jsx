@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { retrieveTextFileForCid } from "../Core/utils/retrieveTextFile";
 import { PageViewer, scrollableContainerAtom } from "./PageViewer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -28,17 +28,52 @@ import { returnAllPossibleVariants } from "../Core/utils/returnAllPossibleVarian
 
 const sendAlert = (msg, type) => console.log(msg);
 
-export function ActivityViewer(props) {
+export function ActivityViewer({
+  doenetML: doenetMLFromProps,
+  updateDataOnContentChange = false,
+  flags,
+  cid: cidFromProps,
+  activityId,
+  userId,
+  attemptNumber: attemptNumberFromProps,
+  requestedVariantIndex: requestedVariantIndexFromProps,
+  updateCreditAchievedCallback,
+  updateActivityStatusCallback,
+  updateAttemptNumber,
+  pageChangedCallback,
+  paginate,
+  showFinishButton,
+  cidChangedCallback,
+  checkIfCidChanged,
+  setActivityAsCompleted,
+  setIsInErrorState,
+  apiURLs = {},
+  generatedVariantCallback,
+  setErrorsAndWarningsCallback,
+  forceDisable,
+  forceShowCorrectness,
+  forceShowSolution,
+  forceUnsuppressCheckwork,
+  location = {},
+  navigate,
+  idsIncludeActivityId = true,
+  inCourse = false,
+}) {
   const setPageToolView = useSetRecoilState(pageToolViewAtom);
 
   const [errMsg, setErrMsg] = useState(null);
 
   const [
-    { cidFromProps, doenetMLFromProps, attemptNumber, requestedVariantIndex },
+    {
+      lastCidFromProps,
+      lastDoenetMLFromProps,
+      attemptNumber,
+      requestedVariantIndex,
+    },
     setInfoFromProps,
   ] = useState({
-    cidFromProps: null,
-    doenetMLFromProps: null,
+    lastCidFromProps: null,
+    lastDoenetMLFromProps: null,
     attemptNumber: null,
     requestedVariantIndex: null,
   });
@@ -67,8 +102,6 @@ export function ActivityViewer(props) {
   const [activityContentChanged, setActivityContentChanged] = useState(false);
 
   const [order, setOrder] = useState(null);
-
-  const [flags, setFlags] = useState(props.flags);
 
   const [currentPage, setCurrentPage] = useState(0);
   const currentPageRef = useRef(currentPage); // so that event listener can get new current page
@@ -112,7 +145,6 @@ export function ActivityViewer(props) {
   const ignoreNextScroll = useRef(false);
   const stillNeedToScrollTo = useRef(null);
 
-  let location = props.location || {};
   let hash = location.hash;
   const previousLocations = useRef({});
   const currentLocationKey = useRef(null);
@@ -122,13 +154,11 @@ export function ActivityViewer(props) {
     useState(false);
   const [processingSubmitAll, setProcessingSubmitAll] = useState(false);
 
-  const updateActivityStatusCallback = props.updateActivityStatusCallback;
-
-  let navigate = props.navigate;
+  const errorsAndWarningsByPage = useRef([]);
 
   let activityPrefix = "";
-  if (props.idsIncludeActivityId) {
-    activityPrefix = cesc(props.activityId);
+  if (idsIncludeActivityId) {
+    activityPrefix = cesc(activityId);
   }
 
   useEffect(() => {
@@ -150,19 +180,6 @@ export function ActivityViewer(props) {
     currentPage,
     activityAttemptNumberSetUp,
   ]);
-
-  useEffect(() => {
-    let newFlags = { ...props.flags };
-    if (props.userId) {
-      newFlags.allowLocalState = false;
-      newFlags.allowSaveState = false;
-    } else if (newFlags.allowSaveState) {
-      // allowSaveState implies allowLoadState
-      newFlags.allowLoadState = true;
-    }
-
-    setFlags(newFlags);
-  }, [props.userId, props.flags]);
 
   useEffect(() => {
     window.returnActivityData = function () {
@@ -203,7 +220,7 @@ export function ActivityViewer(props) {
 
       setScrollableContainer(newScrollableContainer);
 
-      if (!props.paginate && nPages > 1) {
+      if (!paginate && nPages > 1) {
         newScrollableContainer.addEventListener("scroll", (event) => {
           // find page that is at the top
 
@@ -233,7 +250,12 @@ export function ActivityViewer(props) {
   }, [nodeRef.current, nPages]);
 
   useEffect(() => {
-    props.pageChangedCallback?.(currentPage);
+    pageChangedCallback?.(currentPage);
+    if (errorsAndWarningsByPage.current[currentPage - 1]) {
+      setErrorsAndWarningsCallback?.(
+        errorsAndWarningsByPage.current[currentPage - 1],
+      );
+    }
   }, [currentPage]);
 
   useEffect(() => {
@@ -256,7 +278,7 @@ export function ActivityViewer(props) {
         // if we have moved to a page that does not correspond to the hash
         // modify the hash to match the page.
         let navigateAttrs = { replace: true };
-        if (!props.paginate) {
+        if (!paginate) {
           // If not paginated, then do not scroll to the top of the page,
           // as the page change could be triggered by scrolling
 
@@ -272,11 +294,7 @@ export function ActivityViewer(props) {
   }, [currentPage, nPages]);
 
   useEffect(() => {
-    if (
-      allPagesRendered.current &&
-      !props.paginate &&
-      hash?.match(/^#page(\d+)$/)
-    ) {
+    if (allPagesRendered.current && !paginate && hash?.match(/^#page(\d+)$/)) {
       ignoreNextScroll.current = true;
       document.getElementById(hash.slice(1))?.scrollIntoView();
     }
@@ -333,14 +351,11 @@ export function ActivityViewer(props) {
       (location.key === "default" || !foundNewInPrevious)
     ) {
       let scrollTo = hash.slice(1);
-      if (props.paginate && hash.match(/^#page(\d+)$/)) {
+      if (paginate && hash.match(/^#page(\d+)$/)) {
         // if paginate, want to scroll to top of activity so can still see page controls
         scrollTo = `${activityPrefix}top`;
       }
-      if (
-        props.paginate &&
-        Number(hash.match(/^#page(\d+)/)?.[1]) !== currentPage
-      ) {
+      if (paginate && Number(hash.match(/^#page(\d+)/)?.[1]) !== currentPage) {
         stillNeedToScrollTo.current = scrollTo;
       } else {
         document.getElementById(scrollTo)?.scrollIntoView();
@@ -352,25 +367,21 @@ export function ActivityViewer(props) {
     console.log("resetActivity", changedOnDevice, newCid, newAttemptNumber);
 
     if (newAttemptNumber !== attemptNumber) {
-      if (props.updateAttemptNumber) {
+      if (updateAttemptNumber) {
         sendAlert(
           `Reverted activity as attempt number changed on other device`,
           "info",
         );
-        props.updateAttemptNumber(newAttemptNumber);
+        updateAttemptNumber(newAttemptNumber);
       } else {
         // what do we do in this case?
-        if (props.setIsInErrorState) {
-          props.setIsInErrorState(true);
-        }
+        setIsInErrorState?.(true);
         setErrMsg(
           "how to reset attempt number when not given updateAttemptNumber function?",
         );
       }
     } else if (newCid !== cid) {
-      if (props.setIsInErrorState) {
-        props.setIsInErrorState(true);
-      }
+      setIsInErrorState?.(true);
       setErrMsg("Content changed unexpectedly!");
     } else {
       // since, at least for now, only activity state is page number,
@@ -378,54 +389,37 @@ export function ActivityViewer(props) {
     }
 
     // sendAlert(`Reverted page to state saved on device ${changedOnDevice}`, "error");
-
-    // if (cid && newCid !== cid) {
-    //   if (props.setIsInErrorState) {
-    //     props.setIsInErrorState(true)
-    //   }
-    //   console.log(`cid: ${cid}, newCid ${newCid}`)
-    //   setErrMsg("Have not implemented handling change in activity content from other device.  Please reload page");
-    // } else if (newAttemptNumber !== attemptNumber) {
-    //   if (props.setIsInErrorState) {
-    //     props.setIsInErrorState(true)
-    //   }
-    //   setErrMsg("Have not implemented handling creating new attempt from other device.  Please reload page");
-    // } else {
-    //   // What here?
-    // }
   }
 
   function calculateCidDefinition() {
-    if (typeof doenetMLFromProps === "string" || !cidFromProps) {
-      if (cidFromProps) {
+    if (typeof lastDoenetMLFromProps === "string" || !lastCidFromProps) {
+      if (lastCidFromProps) {
         // check to see if doenetML matches cid
-        cidFromText(JSON.stringify(doenetMLFromProps)).then((calcCid) => {
-          if (calcCid === cidFromProps) {
-            setCid(cidFromProps);
-            doenetML.current = doenetMLFromProps;
-            let result = parseActivityDefinition(doenetMLFromProps);
+        cidFromText(JSON.stringify(lastDoenetMLFromProps)).then((calcCid) => {
+          if (calcCid === lastCidFromProps) {
+            setCid(lastCidFromProps);
+            doenetML.current = lastDoenetMLFromProps;
+            let result = parseActivityDefinition(lastDoenetMLFromProps);
             if (result.success) {
               setActivityDefinition(result.activityJSON);
               setStage("continue");
             } else {
-              if (props.setIsInErrorState) {
-                props.setIsInErrorState(true);
-              }
+              setIsInErrorState?.(true);
               setErrMsg(result.message);
             }
           } else {
-            if (props.setIsInErrorState) {
-              props.setIsInErrorState(true);
-            }
+            setIsInErrorState?.(true);
             setErrMsg(
-              `activity definition did not match specified cid: ${cidFromProps}`,
+              `activity definition did not match specified cid: ${lastCidFromProps}`,
             );
           }
         });
       } else {
         // if have no cid, then calculate cid
         const doenetMLOrEmptyString =
-          typeof doenetMLFromProps === "string" ? doenetMLFromProps : "";
+          typeof lastDoenetMLFromProps === "string"
+            ? lastDoenetMLFromProps
+            : "";
         cidFromText(JSON.stringify(doenetMLOrEmptyString)).then((cid) => {
           setCid(cid);
           doenetML.current = doenetMLOrEmptyString;
@@ -434,9 +428,7 @@ export function ActivityViewer(props) {
             setActivityDefinition(result.activityJSON);
             setStage("continue");
           } else {
-            if (props.setIsInErrorState) {
-              props.setIsInErrorState(true);
-            }
+            setIsInErrorState?.(true);
             setErrMsg(result.message);
           }
         });
@@ -444,26 +436,24 @@ export function ActivityViewer(props) {
     } else {
       // if have cid but not doenetML, then retrieve doenetML from cid
 
-      retrieveTextFileForCid(cidFromProps, "doenet")
+      retrieveTextFileForCid(lastCidFromProps, "doenet")
         .then((retrievedActivityDefinition) => {
-          setCid(cidFromProps);
+          setCid(lastCidFromProps);
           doenetML.current = retrievedActivityDefinition;
           let result = parseActivityDefinition(retrievedActivityDefinition);
           if (result.success) {
             setActivityDefinition(result.activityJSON);
             setStage("continue");
           } else {
-            if (props.setIsInErrorState) {
-              props.setIsInErrorState(true);
-            }
+            setIsInErrorState?.(true);
             setErrMsg(result.message);
           }
         })
         .catch((e) => {
-          if (props.setIsInErrorState) {
-            props.setIsInErrorState(true);
-          }
-          setErrMsg(`activity definition not found for cid: ${cidFromProps}`);
+          setIsInErrorState?.(true);
+          setErrMsg(
+            `activity definition not found for cid: ${lastCidFromProps}`,
+          );
         });
     }
   }
@@ -478,9 +468,7 @@ export function ActivityViewer(props) {
       let localInfo;
 
       try {
-        localInfo = await idb_get(
-          `${props.activityId}|${attemptNumber}|${cid}`,
-        );
+        localInfo = await idb_get(`${activityId}|${attemptNumber}|${cid}`);
       } catch (e) {
         // ignore error
       }
@@ -502,9 +490,7 @@ export function ActivityViewer(props) {
               return;
             } else if (result.newCid !== cid) {
               // if cid changes for the same attempt number, then something went wrong
-              if (props.setIsInErrorState) {
-                props.setIsInErrorState(true);
-              }
+              setIsInErrorState?.(true);
               setErrMsg(`content changed unexpectedly!`);
             }
 
@@ -552,23 +538,21 @@ export function ActivityViewer(props) {
         params: {
           cid,
           attemptNumber,
-          activityId: props.activityId,
-          userId: props.userId,
+          activityId,
+          userId,
           allowLoadState: flags.allowLoadState,
         },
       };
 
       let resp;
 
-      if (props.apiURLs?.loadActivityState) {
+      if (apiURLs.loadActivityState) {
         try {
-          resp = await axios.get(props.apiURLs.loadActivityState, payload);
+          resp = await axios.get(apiURLs.loadActivityState, payload);
 
           if (!resp.data.success) {
             if (flags.allowLoadState) {
-              if (props.setIsInErrorState) {
-                props.setIsInErrorState(true);
-              }
+              setIsInErrorState?.(true);
               setErrMsg(`Error loading activity state: ${resp.data.message}`);
               return;
             } else {
@@ -577,9 +561,7 @@ export function ActivityViewer(props) {
           }
         } catch (e) {
           if (flags.allowLoadState) {
-            if (props.setIsInErrorState) {
-              props.setIsInErrorState(true);
-            }
+            setIsInErrorState?.(true);
             setErrMsg(`Error loading activity state: ${e.message}`);
             return;
           } else {
@@ -628,9 +610,7 @@ export function ActivityViewer(props) {
           requestedVariantIndex,
         });
         if (!results.success) {
-          if (props.setIsInErrorState) {
-            props.setIsInErrorState(true);
-          }
+          setIsInErrorState?.(true);
           setErrMsg(`Error initializing activity state: ${results.message}`);
           return;
         }
@@ -654,12 +634,12 @@ export function ActivityViewer(props) {
   }
 
   async function saveLoadedLocalStateToDatabase(localInfo) {
-    if (!flags.allowSaveState || !props.apiURLs?.saveActivityState) {
+    if (!flags.allowSaveState || !apiURLs.saveActivityState) {
       return;
     }
 
     let serverSaveId = await idb_get(
-      `${props.activityId}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${activityId}|${attemptNumber}|${cid}|ServerSaveId`,
     );
 
     let activityStateToBeSavedToDatabase = {
@@ -668,10 +648,10 @@ export function ActivityViewer(props) {
       activityState: JSON.stringify(localInfo.activityState),
       variantIndex: localInfo.variantIndex,
       attemptNumber,
-      activityId: props.activityId,
+      activityId,
       saveId: localInfo.saveId,
       serverSaveId,
-      updateDataOnContentChange: props.updateDataOnContentChange,
+      updateDataOnContentChange,
     };
 
     let resp;
@@ -682,7 +662,7 @@ export function ActivityViewer(props) {
         activityStateToBeSavedToDatabase,
       );
       resp = await axios.post(
-        props.apiURLs.saveActivityState,
+        apiURLs.saveActivityState,
         activityStateToBeSavedToDatabase,
       );
     } catch (e) {
@@ -691,7 +671,7 @@ export function ActivityViewer(props) {
     }
 
     if (resp.data.cidChanged === true) {
-      props?.cidChangedCallback();
+      cidChangedCallback?.();
     }
 
     let data = resp.data;
@@ -702,7 +682,7 @@ export function ActivityViewer(props) {
     }
 
     await idb_set(
-      `${props.activityId}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${activityId}|${attemptNumber}|${cid}|ServerSaveId`,
       data.saveId,
     );
 
@@ -715,7 +695,7 @@ export function ActivityViewer(props) {
       };
 
       await idb_set(
-        `${props.activityId}|${data.attemptNumber}|${data.cid}`,
+        `${activityId}|${data.attemptNumber}|${data.cid}`,
         newLocalInfo,
       );
 
@@ -755,7 +735,7 @@ export function ActivityViewer(props) {
 
     if (flags.allowLocalState) {
       await idb_set(
-        `${props.activityId}|${attemptNumberRef.current}|${cidRef.current}`,
+        `${activityId}|${attemptNumberRef.current}|${cidRef.current}`,
         {
           activityInfo: activityInfo.current,
           activityState: { currentPage: currentPageRef.current },
@@ -775,10 +755,10 @@ export function ActivityViewer(props) {
       activityState: JSON.stringify({ currentPage: currentPageRef.current }),
       variantIndex: variantIndexRef.current,
       attemptNumber: attemptNumberRef.current,
-      activityId: props.activityId,
+      activityId,
       saveId,
       serverSaveId: serverSaveId.current,
-      updateDataOnContentChange: props.updateDataOnContentChange,
+      updateDataOnContentChange,
     };
 
     // mark presence of changes
@@ -795,7 +775,7 @@ export function ActivityViewer(props) {
     if (
       !changesToBeSaved.current ||
       !flags.allowSaveState ||
-      !props.apiURLs?.saveActivityState
+      !apiURLs.saveActivityState
     ) {
       return;
     }
@@ -834,7 +814,7 @@ export function ActivityViewer(props) {
         activityStateToBeSavedToDatabase.current,
       );
       resp = await axios.post(
-        props.apiURLs.saveActivityState,
+        apiURLs.saveActivityState,
         activityStateToBeSavedToDatabase.current,
       );
     } catch (e) {
@@ -873,7 +853,7 @@ export function ActivityViewer(props) {
 
     if (flags.allowLocalState) {
       await idb_set(
-        `${props.activityId}|${attemptNumberRef.current}|${cidRef.current}|ServerSaveId`,
+        `${activityId}|${attemptNumberRef.current}|${cidRef.current}|ServerSaveId`,
         data.saveId,
       );
     }
@@ -889,9 +869,7 @@ export function ActivityViewer(props) {
         });
       } else if (cidRef.current !== data.cid) {
         // if the cid changed without the attemptNumber changing, something went wrong
-        if (props.setIsInErrorState) {
-          props.setIsInErrorState(true);
-        }
+        setIsInErrorState?.(true);
         setErrMsg("Content changed unexpectedly!");
         return;
       }
@@ -905,10 +883,10 @@ export function ActivityViewer(props) {
 
   async function initializeUserAssignmentTables(newItemWeights) {
     //Initialize user_assignment tables
-    if (flags.allowSaveSubmissions && props.apiURLs?.initAssignmentAttempt) {
+    if (flags.allowSaveSubmissions && apiURLs.initAssignmentAttempt) {
       try {
-        let resp = await axios.post(props.apiURLs.initAssignmentAttempt, {
-          activityId: props.activityId,
+        let resp = await axios.post(apiURLs.initAssignmentAttempt, {
+          activityId,
           weights: newItemWeights,
           attemptNumber,
         });
@@ -939,7 +917,7 @@ export function ActivityViewer(props) {
       setStage("saving");
     }
 
-    props.checkIfCidChanged?.(cid);
+    checkIfCidChanged?.(cid);
 
     if (viewerWasUnmounted.current) {
       await saveState({ overrideThrottle: true, overrideStage: true });
@@ -973,13 +951,13 @@ export function ActivityViewer(props) {
   }
 
   function recordEvent(event) {
-    if (!flags.allowSaveEvents || !props.apiURLs?.recordEvent) {
+    if (!flags.allowSaveEvents || !apiURLs.recordEvent) {
       return;
     }
 
     const payload = {
-      activityId: props.activityId,
-      activityCid: cid,
+      activityId,
+      cidForActivity: cid,
       attemptNumber,
       activityVariantIndex: variantIndex,
       timestamp: new Date().toISOString().slice(0, 19).replace("T", " "),
@@ -991,7 +969,7 @@ export function ActivityViewer(props) {
     };
 
     axios
-      .post(props.apiURLs.recordEvent, payload)
+      .post(apiURLs.recordEvent, payload)
       .then((resp) => {
         // console.log(">>>>Activity Viewer resp",resp.data)
       })
@@ -1001,7 +979,7 @@ export function ActivityViewer(props) {
   }
 
   function onChangeVisibility(isVisible, pageInd) {
-    if (!props.paginate) {
+    if (!paginate) {
       setPageInfo((was) => {
         let newObj = { ...was };
         let newVisible = [...newObj.pageIsVisible];
@@ -1096,7 +1074,7 @@ export function ActivityViewer(props) {
 
     await saveState({ overrideThrottle: true });
 
-    props.setActivityAsCompleted?.(itemWeights);
+    setActivityAsCompleted?.(itemWeights);
 
     // TODO: the below should be moved into setActivityAsCompleted
     // so we dn't hardcode URIs here
@@ -1112,12 +1090,12 @@ export function ActivityViewer(props) {
     }
     //Set assignment as completed for the user in the Data Base and Recoil
     let resp = await axios.get("/api/saveCompleted.php", {
-      params: { activityId: props.activityId, isCompleted: true },
+      params: { activityId, isCompleted: true },
     });
     // console.log("resp",resp.data)
     if (resp.data.success) {
       //Mark activity as completed in Recoil
-      props?.setActivityAsCompleted();
+      setActivityAsCompleted?.();
 
       //Go to end exam for the specific page
       setPageToolView((prev) => {
@@ -1126,7 +1104,7 @@ export function ActivityViewer(props) {
           tool: "endExam",
           view: "",
           params: {
-            activityId: props.activityId,
+            activityId,
             attemptNumber,
             itemWeights: itemWeights.join(","),
           },
@@ -1134,6 +1112,16 @@ export function ActivityViewer(props) {
       });
     }
   }
+
+  const setPageErrorsAndWarningsCallback = useCallback(
+    function setPageErrorsAndWarningsCallback(errorsAndWarnings, pageind) {
+      errorsAndWarningsByPage.current[pageind] = errorsAndWarnings;
+      if (pageind === currentPage - 1) {
+        setErrorsAndWarningsCallback?.(errorsAndWarnings);
+      }
+    },
+    [currentPage],
+  );
 
   if (errMsg !== null) {
     let errorIcon = (
@@ -1182,31 +1170,19 @@ export function ActivityViewer(props) {
     }
   }
 
-  //If no attemptNumber prop then set to 1
-  let propAttemptNumber = props.attemptNumber;
-  if (propAttemptNumber === undefined) {
-    propAttemptNumber = 1;
-  }
-
-  // attemptNumber is used for requestedVariantIndex if not specified
-  let adjustedRequestedVariantIndex = props.requestedVariantIndex;
-  if (adjustedRequestedVariantIndex === undefined) {
-    adjustedRequestedVariantIndex = propAttemptNumber;
-  }
-
   if (
-    doenetMLFromProps !== props.doenetML ||
-    cidFromProps !== props.cid ||
-    propAttemptNumber !== attemptNumber ||
-    requestedVariantIndex !== adjustedRequestedVariantIndex
+    lastDoenetMLFromProps !== doenetMLFromProps ||
+    lastCidFromProps !== cidFromProps ||
+    attemptNumber !== attemptNumberFromProps ||
+    requestedVariantIndex !== requestedVariantIndexFromProps
   ) {
     settingUp.current = true;
 
     setInfoFromProps({
-      doenetMLFromProps: props.doenetML,
-      cidFromProps: props.cid,
-      attemptNumber: propAttemptNumber,
-      requestedVariantIndex: adjustedRequestedVariantIndex,
+      lastDoenetMLFromProps: doenetMLFromProps,
+      lastCidFromProps: cidFromProps,
+      attemptNumber: attemptNumberFromProps,
+      requestedVariantIndex: requestedVariantIndexFromProps,
     });
 
     setStage("recalcParams");
@@ -1228,9 +1204,7 @@ export function ActivityViewer(props) {
   // attemptNumber, requestedVariantIndex, cid, activityDefinition
 
   if (activityDefinition?.type?.toLowerCase() !== "activity") {
-    if (props.setIsInErrorState) {
-      props.setIsInErrorState(true);
-    }
+    setIsInErrorState?.(true);
     setErrMsg("Invalid activity definition: type is not activity");
     return null;
   }
@@ -1277,7 +1251,7 @@ export function ActivityViewer(props) {
           ].map((i) => String(i + 1));
         }
 
-        props.generatedVariantCallback?.({
+        generatedVariantCallback?.({
           activityVariant: {
             variantIndex: results.newVariantIndex,
             numVariants: activityInfo.current.numVariants,
@@ -1300,7 +1274,7 @@ export function ActivityViewer(props) {
   if (order && variantsByPage) {
     for (let [ind, page] of order.entries()) {
       let thisPageIsActive = false;
-      if (props.paginate) {
+      if (paginate) {
         if (ind === currentPage - 1) {
           // the current page is always active
           thisPageIsActive = true;
@@ -1328,9 +1302,9 @@ export function ActivityViewer(props) {
 
       let pageViewer = (
         <PageViewer
-          userId={props.userId}
-          activityId={props.activityId}
-          activityCid={cid}
+          userId={userId}
+          activityId={activityId}
+          cidForActivity={cid}
           cid={page.cid}
           doenetML={page.doenetML}
           pageNumber={(ind + 1).toString()}
@@ -1341,33 +1315,36 @@ export function ActivityViewer(props) {
           pageIsCurrent={ind === currentPage - 1}
           itemNumber={ind + 1}
           attemptNumber={attemptNumber}
-          forceDisable={props.forceDisable}
-          forceShowCorrectness={props.forceShowCorrectness}
-          forceShowSolution={props.forceShowSolution}
-          forceUnsuppressCheckwork={props.forceUnsuppressCheckwork}
-          // generatedVariantCallback={props.generatedVariantCallback}
+          forceDisable={forceDisable}
+          forceShowCorrectness={forceShowCorrectness}
+          forceShowSolution={forceShowSolution}
+          forceUnsuppressCheckwork={forceUnsuppressCheckwork}
+          // generatedVariantCallback={generatedVariantCallback}
           flags={flags}
           activityVariantIndex={variantIndex}
           requestedVariantIndex={variantsByPage[ind]}
-          setErrorsAndWarningsCallback={props.setErrorsAndWarningsCallback}
-          updateCreditAchievedCallback={props.updateCreditAchievedCallback}
-          setIsInErrorState={props.setIsInErrorState}
-          updateAttemptNumber={props.updateAttemptNumber}
+          setErrorsAndWarningsCallback={(x) =>
+            setPageErrorsAndWarningsCallback(x, ind)
+          }
+          updateCreditAchievedCallback={updateCreditAchievedCallback}
+          setIsInErrorState={setIsInErrorState}
+          updateAttemptNumber={updateAttemptNumber}
           saveStateCallback={receivedSaveFromPage}
-          updateDataOnContentChange={props.updateDataOnContentChange}
+          updateDataOnContentChange={updateDataOnContentChange}
           coreCreatedCallback={(coreWorker) =>
             coreCreatedCallback(ind, coreWorker)
           }
           renderersInitializedCallback={() => pageRenderedCallback(ind)}
-          hideWhenNotCurrent={props.paginate}
+          hideWhenNotCurrent={paginate}
           prefixForIds={prefixForIds}
-          apiURLs={props.apiURLs}
+          apiURLs={apiURLs}
           location={location}
           navigate={navigate}
+          inCourse={inCourse}
         />
       );
 
-      if (!props.paginate) {
+      if (!paginate) {
         pageViewer = (
           <VisibilitySensor
             partialVisibility={true}
@@ -1390,7 +1367,7 @@ export function ActivityViewer(props) {
 
   let pageControlsTop = null;
   let pageControlsBottom = null;
-  if (props.paginate && nPages > 1) {
+  if (paginate && nPages > 1) {
     pageControlsTop = (
       <div style={{ display: "flex", alignItems: "center", marginLeft: "5px" }}>
         <Button
@@ -1438,7 +1415,7 @@ export function ActivityViewer(props) {
 
   let finishAssessmentPrompt = null;
 
-  if (props.showFinishButton) {
+  if (showFinishButton) {
     if (finishAssessmentMessageOpen) {
       finishAssessmentPrompt = (
         <div

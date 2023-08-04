@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import {
   serializedComponentsReplacer,
@@ -30,14 +30,41 @@ export const scrollableContainerAtom = atom({
 
 const sendAlert = (msg, type) => console.log(msg);
 
-// Two notes about props.flags of PageViewer
-// 1. In Core, flags.allowSaveState implies flags.allowLoadState
-// Rationale: saving state will result in loading a new state if another device changed it,
-// so having allowLoadState false in that case would lead to inconsistent behavior
-// 2. In Core, if props.userId is defined, both
-// flags.allowLocalState and flags.allowSaveState are set to false
-
-export function PageViewer(props) {
+export function PageViewer({
+  userId,
+  activityId,
+  cidForActivity,
+  cid: cidFromProps,
+  doenetML: doenetMLFromProps,
+  pageNumber: pageNumberFromProps = "1",
+  previousComponentTypeCounts,
+  pageIsActive,
+  pageIsCurrent,
+  itemNumber,
+  attemptNumber: attemptNumberFromProps = 1,
+  forceDisable,
+  forceShowCorrectness,
+  forceShowSolution,
+  forceUnsuppressCheckwork,
+  generatedVariantCallback, // currently not passed in
+  flags,
+  activityVariantIndex,
+  requestedVariantIndex: requestedVariantIndexFromProps,
+  setErrorsAndWarningsCallback,
+  updateCreditAchievedCallback,
+  setIsInErrorState,
+  updateAttemptNumber,
+  saveStateCallback,
+  updateDataOnContentChange,
+  coreCreatedCallback,
+  renderersInitializedCallback,
+  hideWhenNotCurrent,
+  prefixForIds = "",
+  apiURLs = {},
+  location = {},
+  navigate,
+  inCourse = false,
+}) {
   const updateRendererSVsWithRecoil = useRecoilCallback(
     ({ snapshot, set }) =>
       async ({
@@ -89,7 +116,7 @@ export function PageViewer(props) {
           childrenInstructions,
           sourceOfUpdate,
           ignoreUpdate,
-          prefixForIds: prefixForIds,
+          prefixForIds,
         };
 
         if (childrenInstructions === undefined) {
@@ -121,8 +148,8 @@ export function PageViewer(props) {
 
   const [errMsg, setErrMsg] = useState(null);
 
-  const [cidFromProps, setCidFromProps] = useState(null);
-  const [doenetMLFromProps, setDoenetMLFromProps] = useState(null);
+  const [lastCidFromProps, setLastCidFromProps] = useState(null);
+  const [lastDoenetMLFromProps, setLastDoenetMLFromProps] = useState(null);
   const [cid, setCid] = useState(null);
   const [doenetML, setDoenetML] = useState(null);
 
@@ -156,8 +183,6 @@ export function PageViewer(props) {
   const resolveActionPromises = useRef({});
   const actionTentativelySkipped = useRef(null);
 
-  const prefixForIds = props.prefixForIds || "";
-
   const previousLocationKeys = useRef([]);
 
   const errorInitializingRenderers = useRef(false);
@@ -168,17 +193,9 @@ export function PageViewer(props) {
   const darkMode = useRecoilValue(darkModeAtom);
 
   const pageToolView = useRecoilValue(pageToolViewAtom);
-  const itemInCourse = useRecoilValue(itemByDoenetId(props.activityId));
   // const scrollableContainer = useRecoilValue(scrollableContainerAtom);
 
-  // Note: useRef for location
-  // to make sure get current value of location in navigateToHash
-  const location = useRef(null);
-
-  let navigate = props.navigate;
-
-  location.current = props.location || {};
-  let hash = location.current.hash;
+  let hash = location.hash;
 
   useEffect(() => {
     if (coreWorker.current) {
@@ -198,7 +215,7 @@ export function PageViewer(props) {
             updateRenderers(e.data.args);
             if (errorInsideRenderers.current) {
               setIgnoreRendererError(true);
-              props.setIsInErrorState?.(false);
+              setIsInErrorState?.(false);
             }
           }
         } else if (e.data.messageType === "requestAnimationFrame") {
@@ -217,7 +234,7 @@ export function PageViewer(props) {
             });
           }
           setStage("coreCreated");
-          props.coreCreatedCallback?.(coreWorker.current);
+          coreCreatedCallback?.(coreWorker.current);
         } else if (e.data.messageType === "initializeRenderers") {
           if (
             coreInfo.current &&
@@ -232,13 +249,13 @@ export function PageViewer(props) {
             initializeRenderers(e.data.args);
             if (errorInsideRenderers.current) {
               setIgnoreRendererError(true);
-              props.setIsInErrorState?.(false);
+              setIsInErrorState?.(false);
             }
           }
         } else if (e.data.messageType === "updateCreditAchieved") {
-          props.updateCreditAchievedCallback?.(e.data.args);
+          updateCreditAchievedCallback?.(e.data.args);
         } else if (e.data.messageType === "savedState") {
-          props.saveStateCallback?.();
+          saveStateCallback?.();
         } else if (e.data.messageType === "sendAlert") {
           console.log(`Sending alert message: ${e.data.args.message}`);
           sendAlert(e.data.args.message, e.data.args.alertType);
@@ -254,13 +271,11 @@ export function PageViewer(props) {
           window["componentRangePieces" + pageNumber] =
             e.data.args.componentRangePieces;
         } else if (e.data.messageType === "inErrorState") {
-          if (props.setIsInErrorState) {
-            props.setIsInErrorState(true);
-          }
+          setIsInErrorState?.(true);
           setErrMsg(e.data.args.errMsg);
         } else if (e.data.messageType === "setErrorWarnings") {
           errorWarnings.current = e.data.errorWarnings;
-          props.setErrorsAndWarningsCallback?.(errorWarnings.current);
+          setErrorsAndWarningsCallback?.(errorWarnings.current);
         } else if (e.data.messageType === "resetPage") {
           resetPage(e.data.args);
         } else if (e.data.messageType === "copyToClipboard") {
@@ -268,7 +283,7 @@ export function PageViewer(props) {
         } else if (e.data.messageType === "navigateToTarget") {
           navigateToTarget(e.data.args);
         } else if (e.data.messageType === "navigateToHash") {
-          navigate(location.current.search + e.data.args.hash, {
+          navigate(location.search + e.data.args.hash, {
             replace: true,
           });
         } else if (e.data.messageType === "terminated") {
@@ -276,7 +291,7 @@ export function PageViewer(props) {
         }
       };
     }
-  }, [coreWorker.current]);
+  }, [coreWorker.current, location]);
 
   useEffect(() => {
     return () => {
@@ -361,22 +376,22 @@ export function PageViewer(props) {
         });
       }
     }
-  }, [location.current, hash, coreCreated.current, coreWorker.current]);
+  }, [location, hash, coreCreated.current, coreWorker.current]);
 
   useEffect(() => {
-    if (hash && documentRenderer && props.pageIsActive) {
+    if (hash && documentRenderer && pageIsActive) {
       let anchor = hash.slice(1);
       if (
-        (!previousLocationKeys.current.includes(location.current.key) ||
-          location.current.key === "default") &&
+        (!previousLocationKeys.current.includes(location.key) ||
+          location.key === "default") &&
         anchor.length > prefixForIds.length &&
         anchor.substring(0, prefixForIds.length) === prefixForIds
       ) {
         document.getElementById(anchor)?.scrollIntoView();
       }
-      previousLocationKeys.current.push(location.current.key);
+      previousLocationKeys.current.push(location.key);
     }
-  }, [location.current, hash, documentRenderer, props.pageIsActive]);
+  }, [location, hash, documentRenderer, pageIsActive]);
 
   useEffect(() => {
     callAction({
@@ -384,6 +399,58 @@ export function PageViewer(props) {
       args: { theme: darkMode, doNotIgnore: true },
     });
   }, [darkMode]);
+
+  const navigateToTarget = useCallback(
+    async ({
+      cid,
+      doenetId,
+      variantIndex,
+      edit,
+      hash,
+      page,
+      uri,
+      targetName,
+      actionId,
+      componentName,
+      effectiveName,
+    }) => {
+      let id = prefixForIds + cesc(effectiveName);
+      let { targetForATag, url, haveValidTarget, externalUri } = getURLFromRef({
+        cid,
+        doenetId,
+        variantIndex,
+        edit,
+        hash,
+        page,
+        givenUri: uri,
+        targetName,
+        pageToolView,
+        inCourse,
+        pathname: location.pathname,
+        search: location.search,
+        id,
+      });
+
+      if (haveValidTarget) {
+        if (targetForATag === "_blank") {
+          window.open(url, targetForATag);
+        } else {
+          // TODO: when fix regular ref navigation to scroll back to previous scroll position
+          // when click the back button
+          // add that ability to this navigation as well
+
+          // let scrollAttribute = scrollableContainer === window ? "scrollY" : "scrollTop";
+          // let stateObj = { fromLink: true }
+          // Object.defineProperty(stateObj, 'previousScrollPosition', { get: () => scrollableContainer?.[scrollAttribute], enumerable: true });
+
+          navigate?.(url);
+        }
+      }
+
+      resolveAction({ actionId });
+    },
+    [location],
+  );
 
   function terminateCoreAndAnimations() {
     preventMoreAnimations.current = true;
@@ -575,12 +642,18 @@ export function PageViewer(props) {
     if (args.rendererState) {
       delete args.rendererState.__componentNeedingUpdateValue;
       if (
-        props.forceDisable ||
-        props.forceShowCorrectness ||
-        props.forceShowSolution ||
-        props.forceUnsuppressCheckwork
+        forceDisable ||
+        forceShowCorrectness ||
+        forceShowSolution ||
+        forceUnsuppressCheckwork
       ) {
-        forceRendererState({ rendererState: args.rendererState, ...props });
+        forceRendererState({
+          rendererState: args.rendererState,
+          forceDisable,
+          forceShowCorrectness,
+          forceShowSolution,
+          forceUnsuppressCheckwork,
+        });
       }
       for (let componentName in args.rendererState) {
         updateRendererSVsWithRecoil({
@@ -595,18 +668,16 @@ export function PageViewer(props) {
 
     coreInfo.current = args.coreInfo;
 
-    if (props.generatedVariantCallback) {
-      props.generatedVariantCallback({
-        pageVariant: {
-          variantInfo: JSON.parse(
-            coreInfo.current.generatedVariantString,
-            serializedComponentsReviver,
-          ),
-          allPossibleVariants: coreInfo.current.allPossibleVariants,
-          itemNumber: props.itemNumber,
-        },
-      });
-    }
+    generatedVariantCallback?.({
+      pageVariant: {
+        variantInfo: JSON.parse(
+          coreInfo.current.generatedVariantString,
+          serializedComponentsReviver,
+        ),
+        allPossibleVariants: coreInfo.current.allPossibleVariants,
+        itemNumber,
+      },
+    });
 
     let renderPromises = [];
     let rendererClassNames = [];
@@ -630,7 +701,7 @@ export function PageViewer(props) {
             key: coreId.current + documentComponentInstructions.componentName,
             componentInstructions: documentComponentInstructions,
             rendererClasses: newRendererClasses,
-            flags: props.flags,
+            flags,
             coreId: coreId.current,
             callAction,
             navigate,
@@ -638,7 +709,7 @@ export function PageViewer(props) {
           }),
         );
 
-        props.renderersInitializedCallback?.();
+        renderersInitializedCallback?.();
       })
       .catch((e) => {
         errorInitializingRenderers.current = true;
@@ -700,13 +771,11 @@ export function PageViewer(props) {
         `Reverted activity as attempt number changed on other device`,
         "info",
       );
-      if (props.updateAttemptNumber) {
-        props.updateAttemptNumber(newAttemptNumber);
+      if (updateAttemptNumber) {
+        updateAttemptNumber(newAttemptNumber);
       } else {
         // what do we do in this case?
-        if (props.setIsInErrorState) {
-          props.setIsInErrorState(true);
-        }
+        setIsInErrorState?.(true);
         setErrMsg(
           "how to reset attempt number when not given updateAttemptNumber function?",
         );
@@ -726,33 +795,31 @@ export function PageViewer(props) {
   function calculateCidDoenetML() {
     const coreIdWhenCalled = coreId.current;
     // compare with undefined as doenetML could be empty string
-    if (doenetMLFromProps !== undefined) {
-      if (cidFromProps) {
+    if (lastDoenetMLFromProps !== undefined) {
+      if (lastCidFromProps) {
         // check to see if doenetML matches cid
-        cidFromText(doenetMLFromProps).then((calcCid) => {
+        cidFromText(lastDoenetMLFromProps).then((calcCid) => {
           //Guard against the possiblity that parameters changed while waiting
 
           if (coreIdWhenCalled === coreId.current) {
-            if (calcCid === cidFromProps) {
-              setDoenetML(doenetMLFromProps);
-              setCid(cidFromProps);
+            if (calcCid === lastCidFromProps) {
+              setDoenetML(lastDoenetMLFromProps);
+              setCid(lastCidFromProps);
               setStage("continue");
             } else {
-              if (props.setIsInErrorState) {
-                props.setIsInErrorState(true);
-              }
+              setIsInErrorState?.(true);
               setErrMsg(
-                `doenetML did not match specified cid: ${cidFromProps}`,
+                `doenetML did not match specified cid: ${lastCidFromProps}`,
               );
             }
           }
         });
       } else {
         // if have doenetML and no cid, then calculate cid
-        cidFromText(doenetMLFromProps).then((cid) => {
+        cidFromText(lastDoenetMLFromProps).then((cid) => {
           //Guard against the possiblity that parameters changed while waiting
           if (coreIdWhenCalled === coreId.current) {
-            setDoenetML(doenetMLFromProps);
+            setDoenetML(lastDoenetMLFromProps);
             setCid(cid);
             setStage("continue");
           }
@@ -761,13 +828,13 @@ export function PageViewer(props) {
     } else {
       // if don't have doenetML, then retrieve doenetML from cid
 
-      retrieveTextFileForCid(cidFromProps, "doenet")
+      retrieveTextFileForCid(lastCidFromProps, "doenet")
         .then((retrievedDoenetML) => {
           //Guard against the possiblity that parameters changed while waiting
 
           if (coreIdWhenCalled === coreId.current) {
             setDoenetML(retrievedDoenetML);
-            setCid(cidFromProps);
+            setCid(lastCidFromProps);
             setStage("continue");
           }
         })
@@ -775,10 +842,8 @@ export function PageViewer(props) {
           //Guard against the possiblity that parameters changed while waiting
 
           if (coreIdWhenCalled === coreId.current) {
-            if (props.setIsInErrorState) {
-              props.setIsInErrorState(true);
-            }
-            setErrMsg(`doenetML not found for cid: ${cidFromProps}`);
+            setIsInErrorState?.(true);
+            setErrMsg(`doenetML not found for cid: ${lastCidFromProps}`);
           }
         });
     }
@@ -788,19 +853,19 @@ export function PageViewer(props) {
     const coreIdWhenCalled = coreId.current;
     let loadedState = false;
 
-    if (props.flags.allowLocalState) {
+    if (flags.allowLocalState) {
       let localInfo;
 
       try {
         localInfo = await idb_get(
-          `${props.activityId}|${pageNumber}|${attemptNumber}|${cid}`,
+          `${activityId}|${pageNumber}|${attemptNumber}|${cid}`,
         );
       } catch (e) {
         // ignore error
       }
 
       if (localInfo) {
-        if (props.flags.allowSaveState) {
+        if (flags.allowSaveState) {
           // attempt to save local info to database,
           // reseting data to that from database if it has changed since last save
 
@@ -816,9 +881,7 @@ export function PageViewer(props) {
               return;
             } else if (result.newCid !== cid) {
               // if cid changes for the same attempt number, then something went wrong
-              if (props.setIsInErrorState) {
-                props.setIsInErrorState(true);
-              }
+              setIsInErrorState?.(true);
               setErrMsg(`content changed unexpectedly!`);
             }
 
@@ -863,7 +926,7 @@ export function PageViewer(props) {
       }
     }
 
-    if (!loadedState && props.apiURLs?.loadPageState) {
+    if (!loadedState && apiURLs.loadPageState) {
       // if didn't load state from local storage, try to load from database
 
       // even if allowLoadState is false,
@@ -874,25 +937,23 @@ export function PageViewer(props) {
           cid,
           pageNumber,
           attemptNumber,
-          activityId: props.activityId,
-          userId: props.userId,
+          activityId,
+          userId,
           requestedVariantIndex,
-          allowLoadState: props.flags.allowLoadState,
-          showCorrectness: props.flags.showCorrectness,
-          solutionDisplayMode: props.flags.solutionDisplayMode,
-          showFeedback: props.flags.showFeedback,
-          showHints: props.flags.showHints,
-          autoSubmit: props.flags.autoSubmit,
+          allowLoadState: flags.allowLoadState,
+          showCorrectness: flags.showCorrectness,
+          solutionDisplayMode: flags.solutionDisplayMode,
+          showFeedback: flags.showFeedback,
+          showHints: flags.showHints,
+          autoSubmit: flags.autoSubmit,
         },
       };
 
       try {
-        let resp = await axios.get(props.apiURLs.loadPageState, payload);
+        let resp = await axios.get(apiURLs.loadPageState, payload);
         if (!resp.data.success) {
-          if (props.flags.allowLoadState) {
-            if (props.setIsInErrorState) {
-              props.setIsInErrorState(true);
-            }
+          if (flags.allowLoadState) {
+            setIsInErrorState?.(true);
             setErrMsg(`Error loading page state: ${resp.data.message}`);
             return;
           } else {
@@ -938,10 +999,8 @@ export function PageViewer(props) {
           };
         }
       } catch (e) {
-        if (props.flags.allowLoadState) {
-          if (props.setIsInErrorState) {
-            props.setIsInErrorState(true);
-          }
+        if (flags.allowLoadState) {
+          setIsInErrorState?.(true);
           setErrMsg(`Error loading page state: ${e.message}`);
           return;
         } else {
@@ -952,7 +1011,7 @@ export function PageViewer(props) {
 
     //Guard against the possiblity that parameters changed while waiting
     if (coreIdWhenCalled === coreId.current) {
-      if (props.pageIsActive) {
+      if (pageIsActive) {
         startCore();
       } else {
         setStage("readyToCreateCore");
@@ -961,12 +1020,12 @@ export function PageViewer(props) {
   }
 
   async function saveLoadedLocalStateToDatabase(localInfo) {
-    if (!props.flags.allowSaveState || !props.apiURLs?.savePageState) {
+    if (!flags.allowSaveState || !apiURLs.savePageState) {
       return;
     }
 
     let serverSaveId = await idb_get(
-      `${props.activityId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${activityId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
     );
 
     let pageStateToBeSavedToDatabase = {
@@ -985,17 +1044,17 @@ export function PageViewer(props) {
       ),
       pageNumber,
       attemptNumber,
-      activityId: props.activityId,
+      activityId,
       saveId: localInfo.saveId,
       serverSaveId,
-      updateDataOnContentChange: props.updateDataOnContentChange,
+      updateDataOnContentChange,
     };
 
     let resp;
 
     try {
       resp = await axios.post(
-        props.apiURLs.savePageState,
+        apiURLs.savePageState,
         pageStateToBeSavedToDatabase,
       );
     } catch (e) {
@@ -1011,7 +1070,7 @@ export function PageViewer(props) {
     }
 
     await idb_set(
-      `${props.activityId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
+      `${activityId}|${pageNumber}|${attemptNumber}|${cid}|ServerSaveId`,
       data.saveId,
     );
 
@@ -1027,7 +1086,7 @@ export function PageViewer(props) {
       };
 
       await idb_set(
-        `${props.activityId}|${pageNumber}|${data.attemptNumber}|${data.cid}`,
+        `${activityId}|${pageNumber}|${data.attemptNumber}|${data.cid}`,
         newLocalInfo,
       );
 
@@ -1060,25 +1119,25 @@ export function PageViewer(props) {
       messageType: "createCore",
       args: {
         coreId: coreId.current,
-        userId: props.userId,
+        userId,
         doenetML,
-        activityId: props.activityId,
-        previousComponentTypeCounts: props.previousComponentTypeCounts,
-        activityCid: props.activityCid,
-        flags: props.flags,
+        activityId,
+        previousComponentTypeCounts,
+        cidForActivity,
+        flags,
         theme: darkMode,
         requestedVariantIndex,
         pageNumber,
         attemptNumber,
-        itemNumber: props.itemNumber,
-        updateDataOnContentChange: props.updateDataOnContentChange,
+        itemNumber,
+        updateDataOnContentChange,
         serverSaveId: initialCoreData.current.serverSaveId,
-        activityVariantIndex: props.activityVariantIndex,
+        activityVariantIndex,
         requestedVariant: initialCoreData.current.requestedVariant,
         stateVariableChanges: initialCoreData.current.coreState
           ? initialCoreData.current.coreState
           : undefined,
-        apiURLs: props.apiURLs,
+        apiURLs: apiURLs,
       },
     });
 
@@ -1137,55 +1196,6 @@ export function PageViewer(props) {
     resolveAction({ actionId });
   }
 
-  async function navigateToTarget({
-    cid,
-    doenetId,
-    variantIndex,
-    edit,
-    hash,
-    page,
-    uri,
-    targetName,
-    actionId,
-    componentName,
-    effectiveName,
-  }) {
-    let id = prefixForIds + cesc(effectiveName);
-    let { targetForATag, url, haveValidTarget, externalUri } = getURLFromRef({
-      cid,
-      doenetId,
-      variantIndex,
-      edit,
-      hash,
-      page,
-      givenUri: uri,
-      targetName,
-      pageToolView,
-      inCourse: Object.keys(itemInCourse).length > 0,
-      pathname: location.current.pathname,
-      search: location.current.search,
-      id,
-    });
-
-    if (haveValidTarget) {
-      if (targetForATag === "_blank") {
-        window.open(url, targetForATag);
-      } else {
-        // TODO: when fix regular ref navigation to scroll back to previous scroll position
-        // when click the back button
-        // add that ability to this navigation as well
-
-        // let scrollAttribute = scrollableContainer === window ? "scrollY" : "scrollTop";
-        // let stateObj = { fromLink: true }
-        // Object.defineProperty(stateObj, 'previousScrollPosition', { get: () => scrollableContainer?.[scrollAttribute], enumerable: true });
-
-        navigate?.(url);
-      }
-    }
-
-    resolveAction({ actionId });
-  }
-
   function errorHandler() {
     errorInsideRenderers.current = true;
 
@@ -1194,49 +1204,31 @@ export function PageViewer(props) {
     }
   }
 
-  // first, if cidFromProps or doenetMLFromProps don't match props
+  // first, if lastCidFromProps or lastDoenetMLFromProps don't match props
   // set state to props and record that that need a new core
 
   let changedState = false;
-  if (doenetMLFromProps !== props.doenetML) {
-    setDoenetMLFromProps(props.doenetML);
+  if (lastDoenetMLFromProps !== doenetMLFromProps) {
+    setLastDoenetMLFromProps(doenetMLFromProps);
     changedState = true;
   }
-  if (cidFromProps !== props.cid) {
-    setCidFromProps(props.cid);
-    changedState = true;
-  }
-
-  //If no pageNumber prop then set to '1'
-  let propPageNumber = props.pageNumber;
-  if (propPageNumber === undefined) {
-    propPageNumber = "1";
-  }
-
-  if (propPageNumber !== pageNumber) {
-    setPageNumber(propPageNumber);
+  if (lastCidFromProps !== cidFromProps) {
+    setLastCidFromProps(cidFromProps);
     changedState = true;
   }
 
-  //If no attemptNumber prop then set to 1
-  let propAttemptNumber = props.attemptNumber;
-  if (propAttemptNumber === undefined) {
-    propAttemptNumber = 1;
-  }
-
-  if (propAttemptNumber !== attemptNumber) {
-    setAttemptNumber(propAttemptNumber);
+  if (pageNumberFromProps !== pageNumber) {
+    setPageNumber(pageNumberFromProps);
     changedState = true;
   }
 
-  // attemptNumber is used for requestedVariantIndex if not specified
-  let adjustedRequestedVariantIndex = props.requestedVariantIndex;
-  if (adjustedRequestedVariantIndex === undefined) {
-    adjustedRequestedVariantIndex = propAttemptNumber;
+  if (attemptNumberFromProps !== attemptNumber) {
+    setAttemptNumber(attemptNumberFromProps);
+    changedState = true;
   }
 
-  if (requestedVariantIndex !== adjustedRequestedVariantIndex) {
-    setRequestedVariantIndex(adjustedRequestedVariantIndex);
+  if (requestedVariantIndex !== requestedVariantIndexFromProps) {
+    setRequestedVariantIndex(requestedVariantIndexFromProps);
     changedState = true;
   }
 
@@ -1244,9 +1236,7 @@ export function PageViewer(props) {
   if (changedState) {
     if (errMsg !== null) {
       setErrMsg(null);
-      if (props.setIsInErrorState) {
-        props.setIsInErrorState(false);
-      }
+      setIsInErrorState?.(false);
     }
 
     if (coreWorker.current) {
@@ -1297,9 +1287,9 @@ export function PageViewer(props) {
     return null;
   }
 
-  if (stage === "readyToCreateCore" && props.pageIsActive) {
+  if (stage === "readyToCreateCore" && pageIsActive) {
     startCore();
-  } else if (stage === "waitingOnCore" && !props.pageIsActive) {
+  } else if (stage === "waitingOnCore" && !pageIsActive) {
     // we've moved off this page, but core is still being initialized
     // kill the core worker
 
@@ -1308,7 +1298,7 @@ export function PageViewer(props) {
     setStage("readyToCreateCore");
   }
 
-  if (props.hideWhenNotCurrent && !props.pageIsCurrent) {
+  if (hideWhenNotCurrent && !pageIsCurrent) {
     return null;
   }
 
@@ -1347,7 +1337,7 @@ export function PageViewer(props) {
   //Spacing around the whole doenetML document
   return (
     <ErrorBoundary
-      setIsInErrorState={props.setIsInErrorState}
+      setIsInErrorState={setIsInErrorState}
       errorHandler={errorHandler}
       ignoreError={ignoreRendererError}
       coreCreated={coreCreated.current}

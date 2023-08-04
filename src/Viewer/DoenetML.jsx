@@ -1,4 +1,5 @@
 import "./DoenetML.css";
+import { prng_alea } from "esm-seedrandom";
 import React from "react";
 import { ActivityViewer } from "./ActivityViewer.jsx";
 import { RecoilRoot } from "recoil";
@@ -7,6 +8,8 @@ import { mathjaxConfig } from "../Core/utils/math";
 import DarkmodeController from "../Tools/_framework/DarkmodeController";
 import VirtualKeyboard from "../Tools/_framework/Footers/VirtualKeyboard";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
+
+let rngClass = prng_alea;
 
 /**
  * this is a hack for react-mathqill
@@ -101,7 +104,7 @@ export function DoenetML({
   cid,
   activityId = "",
   userId,
-  attemptNumber,
+  attemptNumber = 1,
   requestedVariantIndex,
   updateCreditAchievedCallback,
   updateActivityStatusCallback,
@@ -115,6 +118,7 @@ export function DoenetML({
   setIsInErrorState,
   apiURLs,
   generatedVariantCallback,
+  setErrorsAndWarningsCallback,
   forceDisable,
   forceShowCorrectness,
   forceShowSolution,
@@ -122,9 +126,9 @@ export function DoenetML({
   addVirtualKeyboard = true,
   location,
   navigate,
-  allowMultipageActivities = true,
   updateDataOnContentChange = false,
   idsIncludeActivityId = true,
+  inCourse = false,
 }) {
   const defaultFlags = {
     showCorrectness: true,
@@ -141,6 +145,23 @@ export function DoenetML({
   };
 
   flags = { ...defaultFlags, ...flags };
+
+  if (userId) {
+    // if userId was specified, then we're viewing results of someone other than the logged in person
+    // so disable saving state
+    // and disable even looking up state from local storage (as we want to get the state from the database)
+    flags.allowLocalState = false;
+    flags.allowSaveState = false;
+  } else if (flags.allowSaveState) {
+    // allowSaveState implies allowLoadState
+    // Rationale: saving state will result in loading a new state if another device changed it
+    flags.allowLoadState = true;
+  }
+
+  if (requestedVariantIndex === undefined) {
+    let rng = new rngClass(new Date());
+    requestedVariantIndex = Math.floor(rng() * 1000000) + 1;
+  }
 
   let keyboard = null;
 
@@ -182,14 +203,15 @@ export function DoenetML({
               setIsInErrorState={setIsInErrorState}
               apiURLs={apiURLs}
               generatedVariantCallback={generatedVariantCallback}
+              setErrorsAndWarningsCallback={setErrorsAndWarningsCallback}
               forceDisable={forceDisable}
               forceShowCorrectness={forceShowCorrectness}
               forceShowSolution={forceShowSolution}
               forceUnsuppressCheckwork={forceUnsuppressCheckwork}
               location={location}
               navigate={navigate}
-              allowMultipageActivities={allowMultipageActivities}
               idsIncludeActivityId={idsIncludeActivityId}
+              inCourse={inCourse}
             />
             <div className="before-keyboard" />
             {keyboard}
