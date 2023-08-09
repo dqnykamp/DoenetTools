@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ActivityViewer } from "../../Viewer/ActivityViewer.jsx";
+import { DoenetML } from "../../Viewer/DoenetML.jsx";
 import { useRecoilState } from "recoil";
 import { darkModeAtom } from "../_framework/DarkmodeController.jsx";
 // import testCodeDoenetML from './testCode.doenet?raw';
@@ -30,8 +30,8 @@ function Test() {
     localStorage.setItem("test settings", JSON.stringify(defaultTestSettings));
   }
 
-  const [{ doenetML, attemptNumber }, setBaseState] = useState({
-    doenetML: null,
+  const [{ doenetMLstring, attemptNumber }, setBaseState] = useState({
+    doenetMLstring: null,
     attemptNumber: testSettings.attemptNumber,
   });
 
@@ -78,11 +78,11 @@ function Test() {
 
   //For Cypress Test Use
   window.onmessage = (e) => {
-    let newDoenetML = null,
+    let newDoenetMLstring = null,
       newAttemptNumber = attemptNumber;
 
     if (e.data.doenetML !== undefined) {
-      newDoenetML = e.data.doenetML;
+      newDoenetMLstring = e.data.doenetML;
     }
 
     if (e.data.requestedVariantIndex !== undefined) {
@@ -95,9 +95,9 @@ function Test() {
     }
 
     // don't do anything if receive a message from another source (like the youtube player)
-    if (newDoenetML || newAttemptNumber !== attemptNumber) {
+    if (newDoenetMLstring || newAttemptNumber !== attemptNumber) {
       setBaseState({
-        doenetML: newDoenetML,
+        doenetMLstring: newDoenetMLstring,
         attemptNumber: newAttemptNumber,
       });
     }
@@ -405,9 +405,9 @@ function Test() {
   }
 
   let viewer = (
-    <ActivityViewer
+    <DoenetML
       key={"activityViewer" + updateNumber}
-      doenetML={doenetML}
+      doenetML={doenetMLstring}
       // cid={"185fd09b6939d867d4faee82393d4a879a2051196b476acdca26140864bc967a"}
       updateDataOnContentChange={true}
       flags={{
@@ -426,6 +426,7 @@ function Test() {
       attemptNumber={attemptNumber}
       requestedVariantIndex={requestedVariantIndex.current}
       activityId="activityIdFromCypress"
+      idsIncludeActivityId={false}
       paginate={paginate}
       location={location}
       navigate={navigate}

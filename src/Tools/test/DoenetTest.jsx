@@ -390,6 +390,7 @@ function Test() {
       attemptNumber={attemptNumber}
       requestedVariantIndex={requestedVariantIndex.current}
       activityId="activityIdFromTest"
+      idsIncludeActivityId={false}
       paginate={paginate}
       location={location}
       navigate={navigate}
