@@ -819,10 +819,11 @@ async function returnNumberOfActivityVariants(cid) {
     return { success: false, message: "Could not retrieve file" };
   }
 
-  let result = parseActivityDefinition(activityDefinitionDoenetML);
+  let result = await parseActivityDefinition(activityDefinitionDoenetML, cid);
 
-  if (!result.success) {
-    return result;
+  // TODO: handle communication of errors better
+  if (result.errors.length > 0) {
+    return { success: false, message: result.errors[0].message };
   }
 
   try {

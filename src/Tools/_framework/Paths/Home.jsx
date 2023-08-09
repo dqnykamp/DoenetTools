@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect } from "react";
 import { useLoaderData, useOutletContext } from "react-router";
-import { ActivityViewer } from "../../../Viewer/ActivityViewer";
+import { DoenetML } from "../../../Viewer/DoenetML";
 import {
   pageVariantInfoAtom,
   pageVariantPanelAtom,
@@ -342,7 +342,7 @@ export function Home() {
             justifyContent="center"
             alignItems="center"
           >
-            <ActivityViewer
+            <DoenetML
               key={`HPpageViewer`}
               doenetML={doenetML}
               flags={{
@@ -362,6 +362,7 @@ export function Home() {
               generatedVariantCallback={variantCallback} //TODO:Replace
               requestedVariantIndex={variantInfo.index}
               // setIsInErrorState={setIsInErrorState}
+              addBottomPadding={false}
             />
           </Flex>
         </Flex>

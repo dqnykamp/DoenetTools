@@ -124,6 +124,7 @@ export function DoenetML({
   forceShowSolution,
   forceUnsuppressCheckwork,
   addVirtualKeyboard = true,
+  addBottomPadding = true,
   location,
   navigate,
   updateDataOnContentChange = false,
@@ -212,6 +213,7 @@ export function DoenetML({
               navigate={navigate}
               idsIncludeActivityId={idsIncludeActivityId}
               inCourse={inCourse}
+              addBottomPadding={addBottomPadding}
             />
             <div className="before-keyboard" />
             {keyboard}

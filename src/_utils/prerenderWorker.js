@@ -23,10 +23,14 @@ async function prerenderActivity({ cid, doenetId, flags = {} }) {
     return;
   }
 
-  let parseResult = parseActivityDefinition(activityDefDoenetML);
+  let parseResult = await parseActivityDefinition(activityDefDoenetML, cid);
 
-  if (!parseResult.success) {
-    postMessage({ messageType: "error", message: parseResult.message });
+  // TODO: handle error display better
+  if (parseResult.errors.length > 0) {
+    postMessage({
+      messageType: "error",
+      message: parseResult.errors[0].message,
+    });
     return;
   }
 
@@ -51,7 +55,7 @@ async function prerenderActivity({ cid, doenetId, flags = {} }) {
       requestedVariantIndex: variantIndex,
     });
 
-    if (!result.success) {
+    if (result.errors.length > 0) {
       console.error(`Couldn't save initial renderer state: ${result.message}`);
       continue;
     }

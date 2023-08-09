@@ -25,6 +25,11 @@ import { pageToolViewAtom } from "../Tools/_framework/NewToolRoot";
 import { clear as idb_clear } from "idb-keyval";
 import { cesc } from "../_utils/url";
 import { returnAllPossibleVariants } from "../Core/utils/returnAllPossibleVariants";
+import {
+  findAllNewlines,
+  getLineCharRange,
+  printDoenetMLrange,
+} from "../Core/utils/logging";
 
 const sendAlert = (msg, type) => console.log(msg);
 
@@ -58,6 +63,7 @@ export function ActivityViewer({
   navigate,
   idsIncludeActivityId = true,
   inCourse = false,
+  addBottomPadding = true,
 }) {
   const setPageToolView = useSetRecoilState(pageToolViewAtom);
 
@@ -86,6 +92,7 @@ export function ActivityViewer({
   cidRef.current = cid;
 
   const doenetML = useRef(null);
+  const doenetMLNewlines = useRef(null);
 
   const [activityDefinition, setActivityDefinition] = useState(null);
 
@@ -155,6 +162,7 @@ export function ActivityViewer({
   const [processingSubmitAll, setProcessingSubmitAll] = useState(false);
 
   const errorsAndWarningsByPage = useRef([]);
+  const errorsActivitySpecific = useRef([]);
 
   let activityPrefix = "";
   if (idsIncludeActivityId) {
@@ -251,11 +259,6 @@ export function ActivityViewer({
 
   useEffect(() => {
     pageChangedCallback?.(currentPage);
-    if (errorsAndWarningsByPage.current[currentPage - 1]) {
-      setErrorsAndWarningsCallback?.(
-        errorsAndWarningsByPage.current[currentPage - 1],
-      );
-    }
   }, [currentPage]);
 
   useEffect(() => {
@@ -391,71 +394,55 @@ export function ActivityViewer({
     // sendAlert(`Reverted page to state saved on device ${changedOnDevice}`, "error");
   }
 
-  function calculateCidDefinition() {
-    if (typeof lastDoenetMLFromProps === "string" || !lastCidFromProps) {
-      if (lastCidFromProps) {
-        // check to see if doenetML matches cid
-        cidFromText(JSON.stringify(lastDoenetMLFromProps)).then((calcCid) => {
-          if (calcCid === lastCidFromProps) {
-            setCid(lastCidFromProps);
-            doenetML.current = lastDoenetMLFromProps;
-            let result = parseActivityDefinition(lastDoenetMLFromProps);
-            if (result.success) {
-              setActivityDefinition(result.activityJSON);
-              setStage("continue");
-            } else {
-              setIsInErrorState?.(true);
-              setErrMsg(result.message);
-            }
-          } else {
-            setIsInErrorState?.(true);
-            setErrMsg(
-              `activity definition did not match specified cid: ${lastCidFromProps}`,
-            );
-          }
-        });
-      } else {
-        // if have no cid, then calculate cid
-        const doenetMLOrEmptyString =
-          typeof lastDoenetMLFromProps === "string"
-            ? lastDoenetMLFromProps
-            : "";
-        cidFromText(JSON.stringify(doenetMLOrEmptyString)).then((cid) => {
-          setCid(cid);
-          doenetML.current = doenetMLOrEmptyString;
-          let result = parseActivityDefinition(doenetMLOrEmptyString);
-          if (result.success) {
-            setActivityDefinition(result.activityJSON);
-            setStage("continue");
-          } else {
-            setIsInErrorState?.(true);
-            setErrMsg(result.message);
-          }
-        });
-      }
-    } else {
-      // if have cid but not doenetML, then retrieve doenetML from cid
+  async function calculateCidDefinition() {
+    let cid;
 
-      retrieveTextFileForCid(lastCidFromProps, "doenet")
-        .then((retrievedActivityDefinition) => {
-          setCid(lastCidFromProps);
-          doenetML.current = retrievedActivityDefinition;
-          let result = parseActivityDefinition(retrievedActivityDefinition);
-          if (result.success) {
-            setActivityDefinition(result.activityJSON);
-            setStage("continue");
-          } else {
-            setIsInErrorState?.(true);
-            setErrMsg(result.message);
-          }
-        })
-        .catch((e) => {
-          setIsInErrorState?.(true);
-          setErrMsg(
-            `activity definition not found for cid: ${lastCidFromProps}`,
-          );
-        });
+    if (typeof lastDoenetMLFromProps === "string" || !lastCidFromProps) {
+      // If we were given doenetML as a prop, we'll calculate cid from the doenetML.
+      // Also if were not given either doenetML or cid, then we'll calculate cid from a blank string doenetML.
+
+      const doenetMLOrEmptyString =
+        typeof lastDoenetMLFromProps === "string" ? lastDoenetMLFromProps : "";
+      cid = await cidFromText(lastDoenetMLFromProps);
+
+      // If were given both doenetML and cid as a prop and the doenetML doesn't match the cid,
+      // then put in error state
+      if (lastCidFromProps && cid !== lastCidFromProps) {
+        setIsInErrorState?.(true);
+        setErrMsg(
+          `activity definition did not match specified cid: ${lastCidFromProps}`,
+        );
+        return;
+      }
+
+      doenetML.current = doenetMLOrEmptyString;
+    } else {
+      // We were given cid as a prop (but not doenetML).
+      // Attempt to retrieve the doenetML corresponding to the cid.
+      try {
+        doenetML.current = await retrieveTextFileForCid(
+          lastCidFromProps,
+          "doenet",
+        );
+      } catch (e) {
+        setIsInErrorState?.(true);
+        setErrMsg(`activity definition not found for cid: ${lastCidFromProps}`);
+        return;
+      }
+      cid = lastCidFromProps;
     }
+
+    setCid(cid);
+
+    // at this point, doenetML.current is set, so we parse it to get the JSON for the activity definition
+    let result = await parseActivityDefinition(doenetML.current, cid);
+
+    errorsActivitySpecific.current = result.errors;
+
+    doenetMLNewlines.current = findAllNewlines(doenetML.current);
+
+    setActivityDefinition(result.activityJSON);
+    setStage("continue");
   }
 
   async function loadState() {
@@ -604,16 +591,12 @@ export function ActivityViewer({
           setCurrentPage(1);
         }
 
-        let results;
-        results = await calculateOrderAndVariants({
+        let results = await calculateOrderAndVariants({
           activityDefinition,
           requestedVariantIndex,
         });
-        if (!results.success) {
-          setIsInErrorState?.(true);
-          setErrMsg(`Error initializing activity state: ${results.message}`);
-          return;
-        }
+
+        errorsActivitySpecific.current.push(...results.errors);
 
         newVariantIndex = results.variantIndex;
         setVariantIndex(newVariantIndex);
@@ -1113,15 +1096,41 @@ export function ActivityViewer({
     }
   }
 
-  const setPageErrorsAndWarningsCallback = useCallback(
-    function setPageErrorsAndWarningsCallback(errorsAndWarnings, pageind) {
-      errorsAndWarningsByPage.current[pageind] = errorsAndWarnings;
-      if (pageind === currentPage - 1) {
-        setErrorsAndWarningsCallback?.(errorsAndWarnings);
+  function setPageErrorsAndWarningsCallback(errorsAndWarnings, pageind) {
+    errorsAndWarningsByPage.current[pageind] = errorsAndWarnings;
+
+    setErrorsAndWarningsCallback?.(collateErrorsAndWarnings());
+  }
+
+  function collateErrorsAndWarnings() {
+    let allErrors = [];
+
+    for (let error of errorsActivitySpecific.current) {
+      let doenetMLrange = error.doenetMLrange;
+      if (doenetMLrange.lineBegin === undefined) {
+        Object.assign(
+          doenetMLrange,
+          getLineCharRange(doenetMLrange, doenetMLNewlines.current),
+        );
       }
-    },
-    [currentPage],
-  );
+
+      allErrors.push(error);
+    }
+
+    let allWarnings = [];
+
+    for (let errWarn of errorsAndWarningsByPage.current) {
+      if (errWarn) {
+        allErrors.push(...errWarn.errors);
+        allWarnings.push(...errWarn.warnings);
+      }
+    }
+
+    return {
+      errors: allErrors,
+      warnings: allWarnings,
+    };
+  }
 
   if (errMsg !== null) {
     let errorIcon = (
@@ -1185,6 +1194,9 @@ export function ActivityViewer({
       requestedVariantIndex: requestedVariantIndexFromProps,
     });
 
+    errorsAndWarningsByPage.current = [];
+    errorsActivitySpecific.current = [];
+
     setStage("recalcParams");
     setActivityContentChanged(true);
     return null;
@@ -1228,21 +1240,20 @@ export function ActivityViewer({
         let allPossibleVariants;
         if (
           activityDefinition.numVariants === undefined &&
-          (activityDefinition.order.behavior === undefined ||
-            activityDefinition.order.behavior === "sequence") &&
-          activityDefinition.order.content.length === 1 &&
-          activityDefinition.order.content[0].type === "page"
+          activityDefinition.children.length === 1 &&
+          activityDefinition.children[0].type === "page"
         ) {
           // if have a single page, then use the names of the variants
           // defined for that page (rather than the default of numbering them)
-          let page = activityDefinition.order.content[0];
+          let page = activityDefinition.children[0];
 
-          allPossibleVariants = (
-            await returnAllPossibleVariants({
-              cid: page.cid,
-              doenetML: page.doenetML,
-            })
-          ).allPossibleVariants;
+          // TODO: should we save these so we don't have to recalculate them?
+          // Right now, if didn't load state, then we calculated this twice
+          // as call returnAllPossibleVariants in loadState
+          allPossibleVariants = await returnAllPossibleVariants({
+            doenetML: page.doenetML,
+            serializedComponents: page.children,
+          });
         }
 
         if (!allPossibleVariants) {
@@ -1307,6 +1318,7 @@ export function ActivityViewer({
           cidForActivity={cid}
           cid={page.cid}
           doenetML={page.doenetML}
+          preliminarySerializedComponents={page.children}
           pageNumber={(ind + 1).toString()}
           previousComponentTypeCounts={
             previousComponentTypeCountsByPage.current[ind]
@@ -1341,6 +1353,7 @@ export function ActivityViewer({
           location={location}
           navigate={navigate}
           inCourse={inCourse}
+          errorsActivitySpecific={errorsActivitySpecific.current}
         />
       );
 
@@ -1492,12 +1505,53 @@ export function ActivityViewer({
     }
   }
 
+  let paddingStyle = {};
+  if (addBottomPadding) {
+    paddingStyle.paddingBottom = "50vh";
+  }
+
+  let activityErrors = null;
+  if (errorsActivitySpecific.current.length > 0) {
+    const errorsToDisplay = errorsActivitySpecific.current.filter(
+      (x) => x.displayInActivity,
+    );
+    let errorStyle = {
+      backgroundColor: "#ff9999",
+      textAlign: "center",
+      borderWidth: 3,
+      borderStyle: "solid",
+    };
+    activityErrors = errorsToDisplay.map((err, i) => {
+      let rangeMessage = null;
+
+      if (err.doenetMLrange.lineBegin === undefined) {
+        Object.assign(
+          err.doenetMLrange,
+          getLineCharRange(err.doenetMLrange, doenetMLNewlines.current),
+        );
+      }
+
+      if (err.doenetMLrange.lineBegin !== undefined) {
+        rangeMessage = (
+          <>
+            <br />
+            <em>{"Found on " + printDoenetMLrange(err.doenetMLrange) + "."}</em>
+          </>
+        );
+      }
+
+      return (
+        <div style={errorStyle} key={i}>
+          <b>Error</b>: {err.message}
+          {rangeMessage}
+        </div>
+      );
+    });
+  }
+
   return (
-    <div
-      style={{ paddingBottom: "50vh" }}
-      id={`${activityPrefix}top`}
-      ref={nodeRef}
-    >
+    <div style={paddingStyle} id={`${activityPrefix}top`} ref={nodeRef}>
+      {activityErrors}
       {pageControlsTop}
       {title}
       {pages}

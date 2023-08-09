@@ -94,9 +94,15 @@ export default function EditorViewer() {
         return;
       }
 
-      let parseResult = parseActivityDefinition(activityDefinition);
-      if (!parseResult.success) {
-        setErrMsg(`Invalid activity definition: ${parseResult.message}`);
+      let parseResult = await parseActivityDefinition(
+        activityDefinition,
+        activityCid,
+      );
+      // TODO: handle diplsay of errors better
+      if (parseResult.errors.length > 0) {
+        setErrMsg(
+          `Invalid activity definition: ${parseResult.errors[0].message}`,
+        );
         return;
       }
 

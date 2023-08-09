@@ -9,12 +9,8 @@ import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { rendererState } from "./useDoenetRenderer";
 import { atom, atomFamily, useRecoilCallback, useRecoilValue } from "recoil";
 import { get as idb_get, set as idb_set } from "idb-keyval";
-import { cidFromText } from "../Core/utils/cid";
-import { retrieveTextFileForCid } from "../Core/utils/retrieveTextFile";
 import axios from "axios";
-import { returnAllPossibleVariants } from "../Core/utils/returnAllPossibleVariants";
 import { pageToolViewAtom } from "../Tools/_framework/NewToolRoot";
-import { itemByDoenetId } from "../_reactComponents/Course/CourseActions";
 import { darkModeAtom } from "../Tools/_framework/DarkmodeController";
 import { cesc } from "../_utils/url";
 
@@ -34,14 +30,15 @@ export function PageViewer({
   userId,
   activityId,
   cidForActivity,
-  cid: cidFromProps,
-  doenetML: doenetMLFromProps,
-  pageNumber: pageNumberFromProps = "1",
+  cid,
+  doenetML,
+  preliminarySerializedComponents,
+  pageNumber = "1",
   previousComponentTypeCounts,
   pageIsActive,
   pageIsCurrent,
   itemNumber,
-  attemptNumber: attemptNumberFromProps = 1,
+  attemptNumber = 1,
   forceDisable,
   forceShowCorrectness,
   forceShowSolution,
@@ -49,7 +46,7 @@ export function PageViewer({
   generatedVariantCallback, // currently not passed in
   flags,
   activityVariantIndex,
-  requestedVariantIndex: requestedVariantIndexFromProps,
+  requestedVariantIndex,
   setErrorsAndWarningsCallback,
   updateCreditAchievedCallback,
   setIsInErrorState,
@@ -64,6 +61,7 @@ export function PageViewer({
   location = {},
   navigate,
   inCourse = false,
+  errorsActivitySpecific = {},
 }) {
   const updateRendererSVsWithRecoil = useRecoilCallback(
     ({ snapshot, set }) =>
@@ -148,17 +146,13 @@ export function PageViewer({
 
   const [errMsg, setErrMsg] = useState(null);
 
-  const [lastCidFromProps, setLastCidFromProps] = useState(null);
-  const [lastDoenetMLFromProps, setLastDoenetMLFromProps] = useState(null);
-  const [cid, setCid] = useState(null);
-  const [doenetML, setDoenetML] = useState(null);
-
-  const [pageNumber, setPageNumber] = useState(null);
-  const [attemptNumber, setAttemptNumber] = useState(null);
-  const [requestedVariantIndex, setRequestedVariantIndex] = useState(null);
+  const lastCid = useRef(null);
+  const lastDoenetML = useRef(null);
+  const lastPageNumber = useRef(null);
+  const lastAttemptNumber = useRef(null);
+  const lastRequestedVariantIndex = useRef(null);
 
   const [stage, setStage] = useState("initial");
-  const [pageContentChanged, setPageContentChanged] = useState(false);
 
   const [documentRenderer, setDocumentRenderer] = useState(null);
 
@@ -265,8 +259,13 @@ export function PageViewer({
           console.log(e.data.args);
           resolveAllStateVariables.current(e.data.args);
         } else if (e.data.messageType === "returnErrorWarnings") {
-          console.log(e.data.args);
-          resolveErrorWarnings.current(e.data.args);
+          let errorWarnings = e.data.args;
+          errorWarnings.errors = [
+            ...errorsActivitySpecific,
+            ...errorWarnings.errors,
+          ];
+          console.log(errorWarnings);
+          resolveErrorWarnings.current(errorWarnings);
         } else if (e.data.messageType === "componentRangePieces") {
           window["componentRangePieces" + pageNumber] =
             e.data.args.componentRangePieces;
@@ -792,63 +791,6 @@ export function PageViewer({
     }
   }
 
-  function calculateCidDoenetML() {
-    const coreIdWhenCalled = coreId.current;
-    // compare with undefined as doenetML could be empty string
-    if (lastDoenetMLFromProps !== undefined) {
-      if (lastCidFromProps) {
-        // check to see if doenetML matches cid
-        cidFromText(lastDoenetMLFromProps).then((calcCid) => {
-          //Guard against the possiblity that parameters changed while waiting
-
-          if (coreIdWhenCalled === coreId.current) {
-            if (calcCid === lastCidFromProps) {
-              setDoenetML(lastDoenetMLFromProps);
-              setCid(lastCidFromProps);
-              setStage("continue");
-            } else {
-              setIsInErrorState?.(true);
-              setErrMsg(
-                `doenetML did not match specified cid: ${lastCidFromProps}`,
-              );
-            }
-          }
-        });
-      } else {
-        // if have doenetML and no cid, then calculate cid
-        cidFromText(lastDoenetMLFromProps).then((cid) => {
-          //Guard against the possiblity that parameters changed while waiting
-          if (coreIdWhenCalled === coreId.current) {
-            setDoenetML(lastDoenetMLFromProps);
-            setCid(cid);
-            setStage("continue");
-          }
-        });
-      }
-    } else {
-      // if don't have doenetML, then retrieve doenetML from cid
-
-      retrieveTextFileForCid(lastCidFromProps, "doenet")
-        .then((retrievedDoenetML) => {
-          //Guard against the possiblity that parameters changed while waiting
-
-          if (coreIdWhenCalled === coreId.current) {
-            setDoenetML(retrievedDoenetML);
-            setCid(lastCidFromProps);
-            setStage("continue");
-          }
-        })
-        .catch((e) => {
-          //Guard against the possiblity that parameters changed while waiting
-
-          if (coreIdWhenCalled === coreId.current) {
-            setIsInErrorState?.(true);
-            setErrMsg(`doenetML not found for cid: ${lastCidFromProps}`);
-          }
-        });
-    }
-  }
-
   async function loadStateAndInitialize() {
     const coreIdWhenCalled = coreId.current;
     let loadedState = false;
@@ -1120,7 +1062,9 @@ export function PageViewer({
       args: {
         coreId: coreId.current,
         userId,
+        cid,
         doenetML,
+        preliminarySerializedComponents,
         activityId,
         previousComponentTypeCounts,
         cidForActivity,
@@ -1204,36 +1148,38 @@ export function PageViewer({
     }
   }
 
-  // first, if lastCidFromProps or lastDoenetMLFromProps don't match props
+  // first, if lastCid or lastDoenetML don't match props
   // set state to props and record that that need a new core
 
   let changedState = false;
-  if (lastDoenetMLFromProps !== doenetMLFromProps) {
-    setLastDoenetMLFromProps(doenetMLFromProps);
+  if (lastDoenetML.current !== doenetML) {
+    lastDoenetML.current = doenetML;
     changedState = true;
   }
-  if (lastCidFromProps !== cidFromProps) {
-    setLastCidFromProps(cidFromProps);
-    changedState = true;
-  }
-
-  if (pageNumberFromProps !== pageNumber) {
-    setPageNumber(pageNumberFromProps);
+  if (lastCid.current !== cid) {
+    lastCid.current = cid;
     changedState = true;
   }
 
-  if (attemptNumberFromProps !== attemptNumber) {
-    setAttemptNumber(attemptNumberFromProps);
+  if (lastPageNumber.current !== pageNumber) {
+    lastPageNumber.current = pageNumber;
     changedState = true;
   }
 
-  if (requestedVariantIndex !== requestedVariantIndexFromProps) {
-    setRequestedVariantIndex(requestedVariantIndexFromProps);
+  if (lastAttemptNumber.current !== attemptNumber) {
+    lastAttemptNumber.current = attemptNumber;
     changedState = true;
   }
 
-  // Next time through will recalculate, after state variables are set
+  if (lastRequestedVariantIndex.current !== requestedVariantIndex) {
+    lastRequestedVariantIndex.current = requestedVariantIndex;
+    changedState = true;
+  }
+
   if (changedState) {
+    // Reset error messages, core.
+    // Then load state and initialize
+
     if (errMsg !== null) {
       setErrMsg(null);
       setIsInErrorState?.(false);
@@ -1242,10 +1188,17 @@ export function PageViewer({
     if (coreWorker.current) {
       terminateCoreAndAnimations();
     }
-    setStage("recalcParams");
     coreId.current = nanoid();
     initialCoreData.current = {};
-    setPageContentChanged(true);
+    coreInfo.current = null;
+    setDocumentRenderer(null);
+    coreCreated.current = false;
+    coreCreationInProgress.current = false;
+
+    setStage("wait");
+
+    loadStateAndInitialize();
+
     return null;
   }
 
@@ -1263,27 +1216,6 @@ export function PageViewer({
   }
 
   if (stage === "wait") {
-    return null;
-  }
-
-  if (stage == "recalcParams") {
-    setStage("wait");
-    calculateCidDoenetML();
-    return null;
-  }
-
-  if (pageContentChanged) {
-    setPageContentChanged(false);
-
-    coreInfo.current = null;
-    setDocumentRenderer(null);
-    coreCreated.current = false;
-    coreCreationInProgress.current = false;
-
-    setStage("wait");
-
-    loadStateAndInitialize();
-
     return null;
   }
 

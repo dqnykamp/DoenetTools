@@ -137,9 +137,10 @@ export default function DraftAssignmentViewer() {
 
         let result = await returnNumberOfActivityVariantsForCid(cid);
 
-        if (!result.success) {
+        // TODO: better display of errors
+        if (result.errors.length > 0) {
           setStage("Problem");
-          setMessage(result.message);
+          setMessage(result.errors[0].message);
           return;
         }
 

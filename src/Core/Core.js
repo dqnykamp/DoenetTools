@@ -38,7 +38,9 @@ import {
 export default class Core {
   constructor({
     doenetML,
+    preliminarySerializedComponents,
     activityId,
+    cid,
     activityCid,
     pageNumber,
     attemptNumber = 1,
@@ -65,6 +67,7 @@ export default class Core {
     this.itemNumber = itemNumber;
     this.activityVariantIndex = activityVariantIndex;
     this.doenetML = doenetML;
+    this.cid = cid;
 
     this.serverSaveId = serverSaveId;
     this.updateDataOnContentChange = updateDataOnContentChange;
@@ -192,15 +195,13 @@ export default class Core {
       }
     };
 
-    cidFromText(doenetML)
-      .then((cid) =>
-        serializeFunctions.expandDoenetMLsToFullSerializedComponents({
-          cids: [cid],
-          doenetMLs: [doenetML],
-          componentInfoObjects: this.componentInfoObjects,
-          flags: this.flags,
-        }),
-      )
+    serializeFunctions
+      .expandDoenetMLsToFullSerializedComponents({
+        doenetMLs: [doenetML],
+        preliminarySerializedComponents: [preliminarySerializedComponents],
+        componentInfoObjects: this.componentInfoObjects,
+        flags: this.flags,
+      })
       .then(this.finishCoreConstruction)
       .catch((e) => {
         // throw e;
@@ -213,13 +214,11 @@ export default class Core {
   }
 
   async finishCoreConstruction({
-    cids,
     fullSerializedComponents,
     allDoenetMLs,
     errors,
     warnings,
   }) {
-    this.cid = cids[0];
     this.allDoenetMLs = allDoenetMLs;
     this.doenetMLNewlines = findAllNewlines(allDoenetMLs[0]);
 
