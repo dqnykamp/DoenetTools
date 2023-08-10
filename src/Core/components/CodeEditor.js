@@ -113,7 +113,6 @@ export default class CodeEditor extends BlockComponent {
     let addCodeViewer = function ({ matchedChildren, componentAttributes }) {
       let codeViewer = {
         componentType: "codeViewer",
-        children: [{ componentType: "renderDoenetML" }],
       };
 
       //Update depends on this being the 1st index position
@@ -642,13 +641,6 @@ export default class CodeEditor extends BlockComponent {
       await this.coreFunctions.performAction({
         componentName: this.definingChildren[0].componentName,
         actionName: "updateComponents",
-        // event: {
-        //   verb: "selected",
-        //   object: {
-        //     componentName: this.componentName,
-        //     componentType: this.componentType,
-        //   },
-        // },
       });
     }
   }

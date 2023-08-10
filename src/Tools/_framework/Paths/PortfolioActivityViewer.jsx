@@ -123,11 +123,6 @@ export function PortfolioActivityViewer() {
     allPossibleVariants: ["a"],
   });
 
-  let variantOptions = [];
-  variants.allPossibleVariants.forEach((variant) => {
-    variantOptions.push({ value: variant, label: variant });
-  });
-
   return (
     <>
       <VirtualKeyboard />
