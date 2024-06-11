@@ -60,12 +60,9 @@ const db = new Database(
   process.env.DATABASE_USER,
   process.env.DATABASE_PASS,
   {
-    dialect: "postgres",
-    dialectModule: pg,
-    dialectOptions: {
-      ssl: true,
-    },
+    dialect: "mysql",
     host: process.env.DATABASE_HOST,
+    port: process.env.DATABASE_PORT,
     ssl: {
       require: true,
       native: true,
