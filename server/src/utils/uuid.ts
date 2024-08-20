@@ -1,6 +1,7 @@
 import { ContentStructure, DocHistory, UserInfo } from "../types";
 import { fromBinaryUUID, toBinaryUUID } from "./binary-uuid";
 import short from "short-uuid";
+import { v1 as uuidV1 } from "uuid";
 
 const translator = short();
 
@@ -13,7 +14,7 @@ export function fromUUID(UUID: Buffer) {
 }
 
 export function newUUID() {
-  return toBinaryUUID(translator.new());
+  return toBinaryUUID(uuidV1());
 }
 
 export function contentStructureConvertUUID(content: ContentStructure) {
