@@ -81,7 +81,8 @@ import {
   StudentData,
   assignedDataloader,
 } from "./Tools/_framework/Paths/StudentData";
-import { ChakraProvider, extendTheme } from "@chakra-ui/react";
+import { createSystem, defaultConfig } from "@chakra-ui/react";
+import { Provider } from "./components/ui/provider";
 
 import ErrorPage from "./Tools/_framework/Paths/ErrorPage";
 
@@ -111,52 +112,56 @@ import {
   action as changeNameAction,
 } from "./Tools/_framework/Paths/ChangeName";
 
-const theme = extendTheme({
-  fonts: {
-    body: "Jost",
-  },
-  textStyles: {
-    primary: {
-      fontFamily: "Jost",
-    },
-  },
-  config: {
-    initialColorMode: "light",
-    useSystemColorMode: false,
-    // initialColorMode: "system",
-    // useSystemColorMode: true,
-  },
-  colors: {
-    doenet_blue: {
-      100: "#a6f19f", //Ghost/Outline Click
-      200: "#c1292e", //Normal Button - Dark Mode - Background
-      300: "#f5ed85", //Normal Button - Dark Mode - Hover
-      400: "#949494", //Normal Button - Dark Mode - Click
-      500: "#1a5a99", //Normal Button - Light Mode - Background
-      600: "#757c0d", //Normal Button - Light Mode - Hover //Ghost/Outline BG
-      700: "#d1e6f9", //Normal Button - Light Mode - Click
-      800: "#6d4445",
-      900: "#4a03d9",
-    },
-    doenet: {
-      mainBlue: "#1a5a99",
-      lightBlue: "#b8d2ea",
-      solidLightBlue: "#8fb8de",
-      mainGray: "#e3e3e3",
-      mediumGray: "#949494",
-      lightGray: "#e7e7e7",
-      donutBody: "#eea177",
-      donutTopping: "#6d4445",
-      mainRed: "#c1292e",
-      lightRed: "#eab8b8",
-      mainGreen: "#459152",
-      canvas: "#ffffff",
-      canvastext: "#000000",
-      lightGreen: "#a6f19f",
-      lightYellow: "#f5ed85",
-      whiteBlankLink: "#6d4445",
-      mainYellow: "#94610a",
-      mainPurple: "#4a03d9",
+const system = createSystem(defaultConfig, {
+  theme: {
+    tokens: {
+      fonts: {
+        body: { value: "Jost" },
+      },
+      // textStyles: {
+      //   primary: {
+      //     fontFamily: "Jost",
+      //   },
+      // },
+      // config: {
+      //   initialColorMode: "light",
+      //   useSystemColorMode: false,
+      //   // initialColorMode: "system",
+      //   // useSystemColorMode: true,
+      // },
+      colors: {
+        doenet_blue: {
+          100: { value: "#a6f19f" }, //Ghost/Outline Click
+          200: { value: "#c1292e" }, //Normal Button - Dark Mode - Background
+          300: { value: "#f5ed85" }, //Normal Button - Dark Mode - Hover
+          400: { value: "#949494" }, //Normal Button - Dark Mode - Click
+          500: { value: "#1a5a99" }, //Normal Button - Light Mode - Background
+          600: { value: "#757c0d" }, //Normal Button - Light Mode - Hover //Ghost/Outline BG
+          700: { value: "#d1e6f9" }, //Normal Button - Light Mode - Click
+          800: { value: "#6d4445" },
+          900: { value: "#4a03d9" },
+        },
+        doenet: {
+          mainBlue: { value: "#1a5a99" },
+          lightBlue: { value: "#b8d2ea" },
+          solidLightBlue: { value: "#8fb8de" },
+          mainGray: { value: "#e3e3e3" },
+          mediumGray: { value: "#949494" },
+          lightGray: { value: "#e7e7e7" },
+          donutBody: { value: "#eea177" },
+          donutTopping: { value: "#6d4445" },
+          mainRed: { value: "#c1292e" },
+          lightRed: { value: "#eab8b8" },
+          mainGreen: { value: "#459152" },
+          canvas: { value: "#ffffff" },
+          canvastext: { value: "#000000" },
+          lightGreen: { value: "#a6f19f" },
+          lightYellow: { value: "#f5ed85" },
+          whiteBlankLink: { value: "#6d4445" },
+          mainYellow: { value: "#94610a" },
+          mainPurple: { value: "#4a03d9" },
+        },
+      },
     },
   },
 });
@@ -167,7 +172,7 @@ const router = createBrowserRouter([
     loader: siteLoader,
     element: (
       <>
-        <ChakraProvider theme={theme}>
+        <Provider value={system}>
           <MathJaxContext
             version={3}
             config={mathjaxConfig}
@@ -175,13 +180,13 @@ const router = createBrowserRouter([
           >
             <SiteHeader />
           </MathJaxContext>
-        </ChakraProvider>
+        </Provider>
       </>
     ),
     errorElement: (
-      <ChakraProvider theme={theme}>
+      <Provider value={system}>
         <ErrorPage />
-      </ChakraProvider>
+      </Provider>
     ),
     children: [
       {
