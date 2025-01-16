@@ -6,13 +6,13 @@ import { createRoot } from "react-dom/client";
 import "@doenet/doenetml-iframe/style.css";
 
 import { MathJaxContext } from "better-react-mathjax";
-import {
-  loader as exploreLoader,
-  action as exploreAction,
-  Explore,
-} from "./Tools/_framework/Paths/Explore";
-import { action as communityAdminAction } from "./Tools/_framework/Paths/CommunityAdmin";
-import { loader as adminLoader, Admin } from "./Tools/_framework/Paths/Admin";
+// import {
+//   loader as exploreLoader,
+//   action as exploreAction,
+//   Explore,
+// } from "./Tools/_framework/Paths/Explore";
+// import { action as communityAdminAction } from "./Tools/_framework/Paths/CommunityAdmin";
+// import { loader as adminLoader, Admin } from "./Tools/_framework/Paths/Admin";
 import {
   loader as siteLoader,
   SiteHeader,
@@ -23,148 +23,149 @@ import {
   Home,
 } from "./Tools/_framework/Paths/Home";
 
-import {
-  loader as activitiesLoader,
-  action as activitiesAction,
-  Activities,
-} from "./Tools/_framework/Paths/Activities";
-import {
-  loader as sharedActivitiesLoader,
-  action as sharedActivitiesAction,
-  SharedActivities,
-} from "./Tools/_framework/Paths/SharedActivities";
-import {
-  loader as activityViewerLoader,
-  ActivityViewer,
-} from "./Tools/_framework/Paths/ActivityViewer";
-import {
-  loader as assignedLoader,
-  action as assignedAction,
-  Assigned,
-} from "./Tools/_framework/Paths/Assigned";
-import {
-  loader as assignmentDataLoader,
-  AssignmentData,
-} from "./Tools/_framework/Paths/AssignmentData";
-import {
-  loader as assignmentAnswerResponsesLoader,
-  action as assignmentAnswerResponsesAction,
-  AssignmentAnswerResponses,
-} from "./Tools/_framework/Paths/AssignmentAnswerResponses";
-import {
-  loader as assignmentAnswerResponseHistoryLoader,
-  action as assignmentAnswerResponseHistoryAction,
-  AssignmentAnswerResponseHistory,
-} from "./Tools/_framework/Paths/AssignmentAnswerResponseHistory";
-import {
-  loader as assignmentStudentDataLoader,
-  action as assignmentStudentDataAction,
-  AssignmentStudentData,
-  assignedAssignmentDataloader,
-} from "./Tools/_framework/Paths/AssignmentStudentData";
-import {
-  loader as enterClassCodeLoader,
-  action as enterClassCodeAction,
-  EnterClassCode,
-} from "./Tools/_framework/Paths/EnterClassCode";
-import {
-  loader as assignmentViewerLoader,
-  action as assignmentViewerAction,
-  AssignmentViewer,
-} from "./Tools/_framework/Paths/AssignmentViewer";
-import {
-  loader as allAssignmentScoresLoader,
-  AllAssignmentScores,
-} from "./Tools/_framework/Paths/AllAssignmentScores";
-import {
-  loader as studentDataLoader,
-  StudentData,
-  assignedDataloader,
-} from "./Tools/_framework/Paths/StudentData";
-import { createSystem, defaultConfig } from "@chakra-ui/react";
+// import {
+//   loader as activitiesLoader,
+//   action as activitiesAction,
+//   Activities,
+// } from "./Tools/_framework/Paths/Activities";
+// import {
+//   loader as sharedActivitiesLoader,
+//   action as sharedActivitiesAction,
+//   SharedActivities,
+// } from "./Tools/_framework/Paths/SharedActivities";
+// import {
+//   loader as activityViewerLoader,
+//   ActivityViewer,
+// } from "./Tools/_framework/Paths/ActivityViewer";
+// import {
+//   loader as assignedLoader,
+//   action as assignedAction,
+//   Assigned,
+// } from "./Tools/_framework/Paths/Assigned";
+// import {
+//   loader as assignmentDataLoader,
+//   AssignmentData,
+// } from "./Tools/_framework/Paths/AssignmentData";
+// import {
+//   loader as assignmentAnswerResponsesLoader,
+//   action as assignmentAnswerResponsesAction,
+//   AssignmentAnswerResponses,
+// } from "./Tools/_framework/Paths/AssignmentAnswerResponses";
+// import {
+//   loader as assignmentAnswerResponseHistoryLoader,
+//   action as assignmentAnswerResponseHistoryAction,
+//   AssignmentAnswerResponseHistory,
+// } from "./Tools/_framework/Paths/AssignmentAnswerResponseHistory";
+// import {
+//   loader as assignmentStudentDataLoader,
+//   action as assignmentStudentDataAction,
+//   AssignmentStudentData,
+//   assignedAssignmentDataloader,
+// } from "./Tools/_framework/Paths/AssignmentStudentData";
+// import {
+//   loader as enterClassCodeLoader,
+//   action as enterClassCodeAction,
+//   EnterClassCode,
+// } from "./Tools/_framework/Paths/EnterClassCode";
+// import {
+//   loader as assignmentViewerLoader,
+//   action as assignmentViewerAction,
+//   AssignmentViewer,
+// } from "./Tools/_framework/Paths/AssignmentViewer";
+// import {
+//   loader as allAssignmentScoresLoader,
+//   AllAssignmentScores,
+// } from "./Tools/_framework/Paths/AllAssignmentScores";
+// import {
+//   loader as studentDataLoader,
+//   StudentData,
+//   assignedDataloader,
+// } from "./Tools/_framework/Paths/StudentData";
+import { ChakraProvider, createSystem, defaultConfig } from "@chakra-ui/react";
 import { Provider } from "./components/ui/provider";
 
 import ErrorPage from "./Tools/_framework/Paths/ErrorPage";
+import system from "./theme";
 
 import "@fontsource/jost";
-import {
-  ActivityEditor,
-  loader as activityEditorLoader,
-  action as activityEditorAction,
-} from "./Tools/_framework/Paths/ActivityEditor";
-import {
-  CodeViewer,
-  loader as codeViewerLoader,
-} from "./Tools/_framework/Paths/CodeViewer";
+// import {
+//   ActivityEditor,
+//   loader as activityEditorLoader,
+//   action as activityEditorAction,
+// } from "./Tools/_framework/Paths/ActivityEditor";
+// import {
+//   CodeViewer,
+//   loader as codeViewerLoader,
+// } from "./Tools/_framework/Paths/CodeViewer";
 import { mathjaxConfig } from "@doenet/doenetml-iframe";
-import {
-  SignIn,
-  action as signInAction,
-} from "./Tools/_framework/Paths/SignIn";
-import {
-  ConfirmSignIn,
-  loader as confirmSignInLoader,
-  action as confirmSignInAction,
-} from "./Tools/_framework/Paths/ConfirmSignIn";
-import {
-  ChangeName,
-  loader as changeNameLoader,
-  action as changeNameAction,
-} from "./Tools/_framework/Paths/ChangeName";
+// import {
+//   SignIn,
+//   action as signInAction,
+// } from "./Tools/_framework/Paths/SignIn";
+// import {
+//   ConfirmSignIn,
+//   loader as confirmSignInLoader,
+//   action as confirmSignInAction,
+// } from "./Tools/_framework/Paths/ConfirmSignIn";
+// import {
+//   ChangeName,
+//   loader as changeNameLoader,
+//   action as changeNameAction,
+// } from "./Tools/_framework/Paths/ChangeName";
 
-const system = createSystem(defaultConfig, {
-  theme: {
-    tokens: {
-      fonts: {
-        body: { value: "Jost" },
-      },
-      // textStyles: {
-      //   primary: {
-      //     fontFamily: "Jost",
-      //   },
-      // },
-      // config: {
-      //   initialColorMode: "light",
-      //   useSystemColorMode: false,
-      //   // initialColorMode: "system",
-      //   // useSystemColorMode: true,
-      // },
-      colors: {
-        doenet_blue: {
-          100: { value: "#a6f19f" }, //Ghost/Outline Click
-          200: { value: "#c1292e" }, //Normal Button - Dark Mode - Background
-          300: { value: "#f5ed85" }, //Normal Button - Dark Mode - Hover
-          400: { value: "#949494" }, //Normal Button - Dark Mode - Click
-          500: { value: "#1a5a99" }, //Normal Button - Light Mode - Background
-          600: { value: "#757c0d" }, //Normal Button - Light Mode - Hover //Ghost/Outline BG
-          700: { value: "#d1e6f9" }, //Normal Button - Light Mode - Click
-          800: { value: "#6d4445" },
-          900: { value: "#4a03d9" },
-        },
-        doenet: {
-          mainBlue: { value: "#1a5a99" },
-          lightBlue: { value: "#b8d2ea" },
-          solidLightBlue: { value: "#8fb8de" },
-          mainGray: { value: "#e3e3e3" },
-          mediumGray: { value: "#949494" },
-          lightGray: { value: "#e7e7e7" },
-          donutBody: { value: "#eea177" },
-          donutTopping: { value: "#6d4445" },
-          mainRed: { value: "#c1292e" },
-          lightRed: { value: "#eab8b8" },
-          mainGreen: { value: "#459152" },
-          canvas: { value: "#ffffff" },
-          canvastext: { value: "#000000" },
-          lightGreen: { value: "#a6f19f" },
-          lightYellow: { value: "#f5ed85" },
-          whiteBlankLink: { value: "#6d4445" },
-          mainYellow: { value: "#94610a" },
-          mainPurple: { value: "#4a03d9" },
-        },
-      },
-    },
-  },
-});
+// const system = createSystem(defaultConfig, {
+//   theme: {
+//     tokens: {
+//       fonts: {
+//         body: { value: "Jost" },
+//       },
+//       // textStyles: {
+//       //   primary: {
+//       //     fontFamily: "Jost",
+//       //   },
+//       // },
+//       // config: {
+//       //   initialColorMode: "light",
+//       //   useSystemColorMode: false,
+//       //   // initialColorMode: "system",
+//       //   // useSystemColorMode: true,
+//       // },
+//       colors: {
+//         doenet_blue: {
+//           100: { value: "#a6f19f" }, //Ghost/Outline Click
+//           200: { value: "#c1292e" }, //Normal Button - Dark Mode - Background
+//           300: { value: "#f5ed85" }, //Normal Button - Dark Mode - Hover
+//           400: { value: "#949494" }, //Normal Button - Dark Mode - Click
+//           500: { value: "#1a5a99" }, //Normal Button - Light Mode - Background
+//           600: { value: "#757c0d" }, //Normal Button - Light Mode - Hover //Ghost/Outline BG
+//           700: { value: "#d1e6f9" }, //Normal Button - Light Mode - Click
+//           800: { value: "#6d4445" },
+//           900: { value: "#4a03d9" },
+//         },
+//         doenet: {
+//           mainBlue: { value: "#1a5a99" },
+//           lightBlue: { value: "#b8d2ea" },
+//           solidLightBlue: { value: "#8fb8de" },
+//           mainGray: { value: "#e3e3e3" },
+//           mediumGray: { value: "#949494" },
+//           lightGray: { value: "#e7e7e7" },
+//           donutBody: { value: "#eea177" },
+//           donutTopping: { value: "#6d4445" },
+//           mainRed: { value: "#c1292e" },
+//           lightRed: { value: "#eab8b8" },
+//           mainGreen: { value: "#459152" },
+//           canvas: { value: "#ffffff" },
+//           canvastext: { value: "#000000" },
+//           lightGreen: { value: "#a6f19f" },
+//           lightYellow: { value: "#f5ed85" },
+//           whiteBlankLink: { value: "#6d4445" },
+//           mainYellow: { value: "#94610a" },
+//           mainPurple: { value: "#4a03d9" },
+//         },
+//       },
+//     },
+//   },
+// });
 
 const router = createBrowserRouter([
   {
@@ -172,7 +173,7 @@ const router = createBrowserRouter([
     loader: siteLoader,
     element: (
       <>
-        <Provider value={system}>
+        <ChakraProvider value={system}>
           <MathJaxContext
             version={3}
             config={mathjaxConfig}
@@ -180,13 +181,13 @@ const router = createBrowserRouter([
           >
             <SiteHeader />
           </MathJaxContext>
-        </Provider>
+        </ChakraProvider>
       </>
     ),
     errorElement: (
-      <Provider value={system}>
+      <ChakraProvider value={system}>
         <ErrorPage />
-      </Provider>
+      </ChakraProvider>
     ),
     children: [
       {
@@ -196,225 +197,225 @@ const router = createBrowserRouter([
         errorElement: <ErrorPage />,
         element: <Home />,
       },
-      {
-        path: "explore",
-        loader: exploreLoader,
-        action: exploreAction,
-        element: <Explore />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "explore/:systemId",
-        loader: exploreLoader,
-        action: exploreAction,
-        element: <Explore />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "explore/:systemId/:categoryId",
-        loader: exploreLoader,
-        action: exploreAction,
-        element: <Explore />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "explore/:systemId/:categoryId/:subCategoryId",
-        loader: exploreLoader,
-        action: exploreAction,
-        element: <Explore />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "explore/:systemId/:categoryId/:subCategoryId/:classificationId",
-        loader: exploreLoader,
-        action: exploreAction,
-        element: <Explore />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "admin",
-        loader: adminLoader,
-        // sharing an action with the explore page is somewhat intentional
-        // as it shows cards and admins have the same actions that they can perform
-        // on cards as they can on the explore page
-        // TODO - determine if this is an okay way to share functionality across
-        // pages or a bad idea
-        action: communityAdminAction,
-        element: <Admin />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "activities/:userId",
-        loader: activitiesLoader,
-        action: activitiesAction,
-        element: <Activities />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "activities/:userId/:folderId",
-        loader: activitiesLoader,
-        action: activitiesAction,
-        element: <Activities />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "sharedActivities/:ownerId",
-        loader: sharedActivitiesLoader,
-        action: sharedActivitiesAction,
-        element: <SharedActivities />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "sharedActivities/:ownerId/:folderId",
-        loader: sharedActivitiesLoader,
-        action: sharedActivitiesAction,
-        element: <SharedActivities />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "activityViewer/:activityId",
-        loader: activityViewerLoader,
-        errorElement: <ErrorPage />,
-        element: <ActivityViewer />,
-      },
-      {
-        path: "activityEditor/:activityId",
-        loader: activityEditorLoader,
-        action: activityEditorAction,
-        element: <ActivityEditor />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "activityEditor/:activityId/:docId",
-        loader: activityEditorLoader,
-        action: activityEditorAction,
-        // errorElement: <div>Error!</div>,
-        element: <ActivityEditor />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "codeViewer",
-        loader: codeViewerLoader,
-        errorElement: <ErrorPage />,
-        element: <CodeViewer />,
-      },
-      {
-        path: "codeViewer/:activityId",
-        loader: codeViewerLoader,
-        errorElement: <ErrorPage />,
-        element: <CodeViewer />,
-      },
-      {
-        path: "codeViewer/:activityId/:docId",
-        loader: codeViewerLoader,
-        errorElement: <ErrorPage />,
-        element: <CodeViewer />,
-      },
-      {
-        path: "assigned",
-        action: assignedAction,
-        loader: assignedLoader,
-        element: <Assigned />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "assignedData",
-        loader: assignedDataloader,
-        element: <StudentData />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "assignedData/:activityId",
-        action: assignmentStudentDataAction,
-        loader: assignedAssignmentDataloader,
-        element: <AssignmentStudentData />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "assignmentData/:activityId",
-        loader: assignmentDataLoader,
-        element: <AssignmentData />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "assignmentAnswerResponses/:activityId/:docId/:docVersionNum",
-        loader: assignmentAnswerResponsesLoader,
-        action: assignmentAnswerResponsesAction,
-        element: <AssignmentAnswerResponses />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "assignmentAnswerResponseHistory/:activityId/:docId/:docVersionNum/:userId",
-        loader: assignmentAnswerResponseHistoryLoader,
-        action: assignmentAnswerResponseHistoryAction,
-        element: <AssignmentAnswerResponseHistory />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "assignmentData/:activityId/:userId",
-        action: assignmentStudentDataAction,
-        loader: assignmentStudentDataLoader,
-        element: <AssignmentStudentData />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "allAssignmentScores",
-        loader: allAssignmentScoresLoader,
-        element: <AllAssignmentScores />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "allAssignmentScores/:folderId",
-        loader: allAssignmentScoresLoader,
-        element: <AllAssignmentScores />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "studentData/:userId",
-        loader: studentDataLoader,
-        element: <StudentData />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "studentData/:userId/:folderId",
-        loader: studentDataLoader,
-        element: <StudentData />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "code",
-        loader: enterClassCodeLoader,
-        action: enterClassCodeAction,
-        element: <EnterClassCode />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "code/:classCode",
-        loader: assignmentViewerLoader,
-        action: assignmentViewerAction,
-        element: <AssignmentViewer />,
-        errorElement: <ErrorPage />,
-      },
-      {
-        path: "signIn",
-        action: signInAction,
-        errorElement: <ErrorPage />,
-        element: <SignIn />,
-      },
-      {
-        path: "confirmSignIn",
-        loader: confirmSignInLoader,
-        action: confirmSignInAction,
-        errorElement: <ErrorPage />,
-        element: <ConfirmSignIn />,
-      },
-      {
-        path: "changeName",
-        loader: changeNameLoader,
-        action: changeNameAction,
-        errorElement: <ErrorPage />,
-        element: <ChangeName />,
-      },
+      // {
+      //   path: "explore",
+      //   loader: exploreLoader,
+      //   action: exploreAction,
+      //   element: <Explore />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "explore/:systemId",
+      //   loader: exploreLoader,
+      //   action: exploreAction,
+      //   element: <Explore />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "explore/:systemId/:categoryId",
+      //   loader: exploreLoader,
+      //   action: exploreAction,
+      //   element: <Explore />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "explore/:systemId/:categoryId/:subCategoryId",
+      //   loader: exploreLoader,
+      //   action: exploreAction,
+      //   element: <Explore />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "explore/:systemId/:categoryId/:subCategoryId/:classificationId",
+      //   loader: exploreLoader,
+      //   action: exploreAction,
+      //   element: <Explore />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "admin",
+      //   loader: adminLoader,
+      //   // sharing an action with the explore page is somewhat intentional
+      //   // as it shows cards and admins have the same actions that they can perform
+      //   // on cards as they can on the explore page
+      //   // TODO - determine if this is an okay way to share functionality across
+      //   // pages or a bad idea
+      //   action: communityAdminAction,
+      //   element: <Admin />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "activities/:userId",
+      //   loader: activitiesLoader,
+      //   action: activitiesAction,
+      //   element: <Activities />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "activities/:userId/:folderId",
+      //   loader: activitiesLoader,
+      //   action: activitiesAction,
+      //   element: <Activities />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "sharedActivities/:ownerId",
+      //   loader: sharedActivitiesLoader,
+      //   action: sharedActivitiesAction,
+      //   element: <SharedActivities />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "sharedActivities/:ownerId/:folderId",
+      //   loader: sharedActivitiesLoader,
+      //   action: sharedActivitiesAction,
+      //   element: <SharedActivities />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "activityViewer/:activityId",
+      //   loader: activityViewerLoader,
+      //   errorElement: <ErrorPage />,
+      //   element: <ActivityViewer />,
+      // },
+      // {
+      //   path: "activityEditor/:activityId",
+      //   loader: activityEditorLoader,
+      //   action: activityEditorAction,
+      //   element: <ActivityEditor />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "activityEditor/:activityId/:docId",
+      //   loader: activityEditorLoader,
+      //   action: activityEditorAction,
+      //   // errorElement: <div>Error!</div>,
+      //   element: <ActivityEditor />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "codeViewer",
+      //   loader: codeViewerLoader,
+      //   errorElement: <ErrorPage />,
+      //   element: <CodeViewer />,
+      // },
+      // {
+      //   path: "codeViewer/:activityId",
+      //   loader: codeViewerLoader,
+      //   errorElement: <ErrorPage />,
+      //   element: <CodeViewer />,
+      // },
+      // {
+      //   path: "codeViewer/:activityId/:docId",
+      //   loader: codeViewerLoader,
+      //   errorElement: <ErrorPage />,
+      //   element: <CodeViewer />,
+      // },
+      // {
+      //   path: "assigned",
+      //   action: assignedAction,
+      //   loader: assignedLoader,
+      //   element: <Assigned />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "assignedData",
+      //   loader: assignedDataloader,
+      //   element: <StudentData />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "assignedData/:activityId",
+      //   action: assignmentStudentDataAction,
+      //   loader: assignedAssignmentDataloader,
+      //   element: <AssignmentStudentData />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "assignmentData/:activityId",
+      //   loader: assignmentDataLoader,
+      //   element: <AssignmentData />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "assignmentAnswerResponses/:activityId/:docId/:docVersionNum",
+      //   loader: assignmentAnswerResponsesLoader,
+      //   action: assignmentAnswerResponsesAction,
+      //   element: <AssignmentAnswerResponses />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "assignmentAnswerResponseHistory/:activityId/:docId/:docVersionNum/:userId",
+      //   loader: assignmentAnswerResponseHistoryLoader,
+      //   action: assignmentAnswerResponseHistoryAction,
+      //   element: <AssignmentAnswerResponseHistory />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "assignmentData/:activityId/:userId",
+      //   action: assignmentStudentDataAction,
+      //   loader: assignmentStudentDataLoader,
+      //   element: <AssignmentStudentData />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "allAssignmentScores",
+      //   loader: allAssignmentScoresLoader,
+      //   element: <AllAssignmentScores />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "allAssignmentScores/:folderId",
+      //   loader: allAssignmentScoresLoader,
+      //   element: <AllAssignmentScores />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "studentData/:userId",
+      //   loader: studentDataLoader,
+      //   element: <StudentData />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "studentData/:userId/:folderId",
+      //   loader: studentDataLoader,
+      //   element: <StudentData />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "code",
+      //   loader: enterClassCodeLoader,
+      //   action: enterClassCodeAction,
+      //   element: <EnterClassCode />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "code/:classCode",
+      //   loader: assignmentViewerLoader,
+      //   action: assignmentViewerAction,
+      //   element: <AssignmentViewer />,
+      //   errorElement: <ErrorPage />,
+      // },
+      // {
+      //   path: "signIn",
+      //   action: signInAction,
+      //   errorElement: <ErrorPage />,
+      //   element: <SignIn />,
+      // },
+      // {
+      //   path: "confirmSignIn",
+      //   loader: confirmSignInLoader,
+      //   action: confirmSignInAction,
+      //   errorElement: <ErrorPage />,
+      //   element: <ConfirmSignIn />,
+      // },
+      // {
+      //   path: "changeName",
+      //   loader: changeNameLoader,
+      //   action: changeNameAction,
+      //   errorElement: <ErrorPage />,
+      //   element: <ChangeName />,
+      // },
     ],
   },
 ]);

@@ -1,8 +1,8 @@
-import React, { lazy, Suspense, useEffect, useState } from "react";
-import { useLoaderData } from "react-router";
+import React, { lazy, Suspense, useEffect } from "react";
+// import { useLoaderData } from "react-router";
 import { DoenetViewer } from "@doenet/doenetml-iframe";
 
-import { Carousel } from "../../../Widgets/Carousel";
+// import { Carousel } from "../../../Widgets/Carousel";
 import {
   Box,
   Center,
@@ -11,23 +11,20 @@ import {
   Flex,
   Link,
   Image,
-  Tooltip,
-  useColorModeValue,
   Button,
   VStack,
   Grid,
   GridItem,
   HStack,
-  Show,
   SimpleGrid,
-  Hide,
-  useDisclosure,
 } from "@chakra-ui/react";
+// import { useColorModeValue } from "../../../components/ui/color-mode";
+import { Tooltip } from "@/components/ui/tooltip";
 import { HiOutlineMail } from "react-icons/hi";
 import { BsGithub, BsDiscord } from "react-icons/bs";
 import axios from "axios";
-import { ContentStructure } from "../../../_utils/types";
-import { ContentInfoDrawer } from "../ToolPanels/ContentInfoDrawer";
+// import { ContentStructure } from "../../../_utils/types";
+// import { ContentInfoDrawer } from "../ToolPanels/ContentInfoDrawer";
 
 export async function loader() {
   const { data: promotedContent } = await axios.get("/api/loadPromotedContent");
@@ -94,33 +91,38 @@ const doenetML = `
 `;
 
 export function Home() {
-  const { favorites } = useLoaderData() as { favorites: any };
+  // const { favorites } = useLoaderData() as { favorites: any };
 
   useEffect(() => {
     document.title = `Home - Doenet`;
   }, []);
 
-  const grayColor = useColorModeValue("doenet.mainGray", "doenet.lightGray");
-  const blueColor = useColorModeValue("doenet.lightBlue", "doenet.mainBlue");
+  // const grayColor = useColorModeValue("doenet.mainGray", "doenet.lightGray");
+  // const blueColor = useColorModeValue("doenet.lightBlue", "doenet.mainBlue");
+  // const blackColor = "black";
+  // const whiteColor = useColorModeValue("white", "gray.900");
+
+  const grayColor = "doenet.mainGray";
+  const blueColor = "doenet.lightBlue";
   const blackColor = "black";
-  const whiteColor = useColorModeValue("white", "gray.900");
+  const whiteColor = "white";
 
-  const [infoContentData, setInfoContentData] =
-    useState<ContentStructure | null>(null);
+  // const [infoContentData, setInfoContentData] =
+  //   useState<ContentStructure | null>(null);
 
-  const {
-    isOpen: infoIsOpen,
-    onOpen: infoOnOpen,
-    onClose: infoOnClose,
-  } = useDisclosure();
+  // const {
+  //   isOpen: infoIsOpen,
+  //   onOpen: infoOnOpen,
+  //   onClose: infoOnClose,
+  // } = useDisclosure();
 
-  const infoDrawer = infoContentData ? (
-    <ContentInfoDrawer
-      isOpen={infoIsOpen}
-      onClose={infoOnClose}
-      contentData={infoContentData}
-    />
-  ) : null;
+  // const infoDrawer = infoContentData ? (
+  //   <ContentInfoDrawer
+  //     isOpen={infoIsOpen}
+  //     onClose={infoOnClose}
+  //     contentData={infoContentData}
+  //   />
+  // ) : null;
 
   const heroTextAndActions = () => {
     return (
@@ -178,7 +180,7 @@ export function Home() {
 
   return (
     <>
-      {infoDrawer}
+      {/* {infoDrawer} */}
       <Center w="100%" bg={"#fefa78"} pl="10px" pr="10px">
         <Text
           fontSize={["18px", "18px", "18px", "24px"]}
@@ -200,40 +202,37 @@ export function Home() {
         py="30px"
         overflow="hidden"
       >
-        <Show above="sm">
-          <Grid
-            gridTemplateAreas={`"Description Video"
+        <Grid
+          hideBelow="sm"
+          gridTemplateAreas={`"Description Video"
         `}
-            // gridTemplateRows={"120px auto"}
-            gridTemplateColumns={"60vw auto"}
-          >
-            <GridItem area="Description" margin="10vh 0 0 10vh">
-              {heroTextAndActions()}
-            </GridItem>
-            <GridItem area="Video" p="40px">
-              <Suspense fallback={"Loading..."}>
-                {/* Does this lazy loading do anything? */}
-                <Box ml="30px">
-                  <HomeIntroVideo />
-                </Box>
-              </Suspense>
-            </GridItem>
-          </Grid>
-        </Show>
-        <Hide above="sm">
-          <SimpleGrid columns={[1, 1, 2, 2, 2]} spacing="10px">
+          // gridTemplateRows={"120px auto"}
+          gridTemplateColumns={"60vw auto"}
+        >
+          <GridItem area="Description" margin="10vh 0 0 10vh">
+            {heroTextAndActions()}
+          </GridItem>
+          <GridItem area="Video" p="40px">
             <Suspense fallback={"Loading..."}>
-              {/* Does this lazy loading do anything? */}
+              //Does this lazy loading do anything?
               <Box ml="30px">
                 <HomeIntroVideo />
               </Box>
             </Suspense>
-            {heroTextAndActions()}
-          </SimpleGrid>
-        </Hide>
+          </GridItem>
+        </Grid>
+        <SimpleGrid columns={[1, 1, 2, 2, 2]} gap="10px" hideFrom="sm">
+          <Suspense fallback={"Loading..."}>
+            //Does this lazy loading do anything?
+            <Box ml="30px">
+              <HomeIntroVideo />
+            </Box>
+          </Suspense>
+          {heroTextAndActions()}
+        </SimpleGrid>
       </Flex>
       <Center w="100%" bg={grayColor} pl="10px" pr="10px">
-        <VStack maxWidth="900px" w="100%" spacing={4} marginBottom={"30px"}>
+        <VStack maxWidth="900px" w="100%" gap={4} marginBottom={"30px"}>
           <HStack>
             <Box
               w={["90px", "90px", "100px", "160px", "200px"]}
@@ -289,7 +288,7 @@ export function Home() {
         <VStack
           maxWidth="900px"
           w="100%"
-          spacing={4}
+          gap={4}
           marginTop="40px"
           marginBottom="40px"
         >
@@ -353,7 +352,7 @@ export function Home() {
         <VStack
           maxWidth="900px"
           w="100%"
-          spacing={4}
+          gap={4}
           marginTop="40px"
           marginBottom="40px"
         >
@@ -406,7 +405,7 @@ export function Home() {
       </Center>
 
       <Center w="100%" bg={"white"} paddingTop="40px" pl="10px" pr="10px">
-        <HStack maxWidth="750px" w="100%" spacing={4}>
+        <HStack maxWidth="750px" w="100%" gap={4}>
           <Text
             fontSize={["30px", "30px", "30px", "40px", "60px"]}
             // fontSize="60px"
@@ -434,23 +433,23 @@ export function Home() {
         bg={"white"}
         p="60px 10px"
       >
-        <Carousel
+        {/* <Carousel
           title="Doenet Team Favorites"
           activities={favorites.promotedContent}
           setInfoContentData={setInfoContentData}
           infoOnOpen={infoOnOpen}
-        />
+        />  */}
       </Flex>
 
       <Center w="100%" bg={blueColor} pl="10px" pr="10px">
         <VStack
           maxWidth="900px"
           w="100%"
-          spacing={4}
+          gap={4}
           marginTop="40px"
           marginBottom="40px"
         >
-          <HStack maxWidth="750px" w="100%" spacing={4}>
+          <HStack maxWidth="750px" w="100%" gap={4}>
             <Text
               fontSize={["30px", "30px", "30px", "40px", "60px"]}
               // fontSize="60px"
@@ -483,7 +482,7 @@ export function Home() {
               come by their group.
             </Text>
 
-            <Show above="sm">
+            <Box hideBelow="sm">
               <Text fontSize="20px" marginTop="10px">
                 Open-ended response
               </Text>
@@ -499,45 +498,44 @@ export function Home() {
                 </Link>
                 )
               </Text>
-            </Show>
+            </Box>
           </Box>
 
-          <Show above="sm">
-            <Flex
-              bg={whiteColor}
-              //py="10px"
-              justifyContent="center"
-              alignItems="center"
-              width={["350px", "450px", "650px", "850px"]}
-              overflow="clip"
-            >
-              <DoenetViewer
-                key={`HPpageViewer`}
-                doenetML={doenetML}
-                doenetmlVersion={doenetmlVersion}
-                flags={{
-                  showCorrectness: true,
-                  solutionDisplayMode: "button",
-                  showFeedback: true,
-                  showHints: true,
-                  autoSubmit: false,
-                  allowLoadState: false,
-                  allowSaveState: false,
-                  allowLocalState: false,
-                  allowSaveSubmissions: false,
-                  allowSaveEvents: false,
-                }}
-                // activityId={doenetId}
-                attemptNumber={1}
-                // setIsInErrorState={setIsInErrorState}
-                addBottomPadding={false}
-                linkSettings={{
-                  viewURL: "/activityViewer",
-                  editURL: "/codeViewer",
-                }}
-              />
-            </Flex>
-          </Show>
+          <Flex
+            hideBelow="sm"
+            bg={whiteColor}
+            //py="10px"
+            justifyContent="center"
+            alignItems="center"
+            width={["350px", "450px", "650px", "850px"]}
+            overflow="clip"
+          >
+            <DoenetViewer
+              key={`HPpageViewer`}
+              doenetML={doenetML}
+              doenetmlVersion={doenetmlVersion}
+              flags={{
+                showCorrectness: true,
+                solutionDisplayMode: "button",
+                showFeedback: true,
+                showHints: true,
+                autoSubmit: false,
+                allowLoadState: false,
+                allowSaveState: false,
+                allowLocalState: false,
+                allowSaveSubmissions: false,
+                allowSaveEvents: false,
+              }}
+              // activityId={doenetId}
+              attemptNumber={1}
+              // setIsInErrorState={setIsInErrorState}
+              addBottomPadding={false}
+              linkSettings={{
+                viewURL: "/activityViewer",
+                editURL: "/codeViewer",
+              }}
+            />
+          </Flex>
         </VStack>
       </Center>
       <Center
@@ -559,8 +557,9 @@ export function Home() {
                 size="sm"
                 fontSize="16pt"
                 aria-label="Email Doenet"
-                icon={<HiOutlineMail />}
-              />
+              >
+                <HiOutlineMail />
+              </IconButton>
             </Tooltip>
           </Link>
 
@@ -571,8 +570,9 @@ export function Home() {
                 size="sm"
                 fontSize="16pt"
                 aria-label="Doenet GitHub"
-                icon={<BsGithub />}
-              />
+              >
+                <BsGithub />
+              </IconButton>
             </Tooltip>
           </Link>
           <Link href="https://discord.gg/PUduwtKJ5h">
@@ -582,8 +582,9 @@ export function Home() {
                 size="sm"
                 fontSize="16pt"
                 aria-label="Doenet Discord"
-                icon={<BsDiscord />}
-              />
+              >
+                <BsDiscord />
+              </IconButton>
             </Tooltip>
           </Link>
 

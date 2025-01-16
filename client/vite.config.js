@@ -3,12 +3,13 @@ import { NodeModulesPolyfillPlugin } from "@esbuild-plugins/node-modules-polyfil
 import react from "@vitejs/plugin-react";
 import nodePolyfills from "rollup-plugin-polyfill-node";
 import { defineConfig } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
 export default defineConfig(() => ({
-  plugins: [react()],
+  plugins: [react(), tsconfigPaths()],
   server: {
     port: 8000,
     proxy: {

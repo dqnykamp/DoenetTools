@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Icon,
-  Button,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  InputRightAddon,
-} from "@chakra-ui/react";
+import { Icon, Button, Input, Group, InputAddon } from "@chakra-ui/react";
 import { IoSearchSharp } from "react-icons/io5";
 
 export default function Searchbar({
@@ -24,10 +17,10 @@ export default function Searchbar({
 }) {
   return (
     <>
-      <InputGroup borderLeftRadius={5} size="sm">
-        <InputLeftElement pointerEvents="none">
+      <Group borderLeftRadius={5}>
+        <InputAddon pointerEvents="none">
           <Icon as={IoSearchSharp} color="gray.600" />
-        </InputLeftElement>
+        </InputAddon>
         <Input
           type="search"
           placeholder="Search..."
@@ -39,7 +32,7 @@ export default function Searchbar({
           onInput={onInput}
           onChange={onChange}
         />
-        <InputRightAddon
+        <InputAddon
           p={0}
           border="none"
           borderLeftRadius={0}
@@ -54,8 +47,8 @@ export default function Searchbar({
           >
             Search
           </Button>
-        </InputRightAddon>
-      </InputGroup>
+        </InputAddon>
+      </Group>
     </>
   );
 }

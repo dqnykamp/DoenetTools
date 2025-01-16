@@ -29,7 +29,7 @@
     "compile_grammar": "npx lezer-generator --output src/Parser/doenet.js src/Parser/doenet.grammar"
   },
   "dependencies": {
-    "@chakra-ui/icons": "^2.2.4",
+    "@chakra-ui/cli": "^3.3.1",
     "@chakra-ui/react": "^3.3.1",
     "@doenet/doenetml-iframe": "^0.7.0-alpha20",
     "@emotion/react": "^11.14.0",
@@ -92,7 +92,8 @@
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "vite-plugin-mpa": "^1.2.0",
-    "vite-plugin-static-copy": "^2.2.0"
+    "vite-plugin-static-copy": "^2.2.0",
+    "vite-tsconfig-paths": "^5.1.4"
   },
   "optionalDependencies": {
     "@esbuild/linux-arm64": "^0.24.2",

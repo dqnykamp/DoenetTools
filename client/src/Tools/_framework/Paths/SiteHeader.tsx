@@ -9,18 +9,19 @@ import {
   HStack,
   Link,
   Text,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Avatar,
   VStack,
-  Show,
-  useBreakpointValue,
+  // useBreakpointValue,
   SkipNavLink,
   SkipNavContent,
-  Hide,
 } from "@chakra-ui/react";
+import {
+  MenuContent,
+  MenuItem,
+  MenuRoot,
+  MenuTrigger,
+} from "@/components/ui/menu";
+import { Avatar } from "@/components/ui/avatar";
+
 import { HiOutlineMail } from "react-icons/hi";
 import { BsDiscord } from "react-icons/bs";
 import { Outlet, useLoaderData } from "react-router";
@@ -89,19 +90,15 @@ function NavLinkTab({ to, children, dataTest }) {
 function NavLinkDropdownTab({ to, children, dataTest }) {
   // TODO: use end only when path is "/"
   return (
-    <NavLink to={to} end data-test={dataTest}>
-      {({ isActive }) => {
-        // let spinner = null;
-        // if (isPending) {
-        //   spinner = <Spinner size="sm" />;
-        // }
-        let color = "doenet.canvastext";
-        if (isActive) {
-          color = "doenet.mainBlue";
-        }
+    <MenuItem asChild value={to}>
+      <NavLink to={to} end data-test={dataTest}>
+        {({ isActive }) => {
+          let color = "doenet.canvastext";
+          if (isActive) {
+            color = "doenet.mainBlue";
+          }
 
-        return (
-          <MenuItem>
+          return (
             <Center
               h="40px"
               borderBottomStyle="none"
@@ -112,22 +109,21 @@ function NavLinkDropdownTab({ to, children, dataTest }) {
               <Text fontSize="md" color={color}>
                 {children}
               </Text>
-              {/* {spinner} */}
             </Center>
-          </MenuItem>
-        );
-      }}
-    </NavLink>
+          );
+        }}
+      </NavLink>
+    </MenuItem>
   );
 }
 
 export function SiteHeader() {
   const { user } = useLoaderData() as { user: User };
 
-  const helpMenuShouldFocusFirst = useBreakpointValue(
-    { base: false, md: true },
-    { ssr: false },
-  );
+  // const helpMenuShouldFocusFirst = useBreakpointValue(
+  //   { base: false, md: true },
+  //   { ssr: false },
+  // );
 
   return (
     <>
@@ -171,87 +167,80 @@ export function SiteHeader() {
                 <RouterLogo />
               </Center>
             </GridItem>
-            <Show above="md">
-              <GridItem area="menus">
-                <HStack spacing={8}>
-                  <NavLinkTab to="/" dataTest="Home">
-                    Home
+            <GridItem area="menus" hideBelow="md">
+              <HStack gap={8}>
+                <NavLinkTab to="/" dataTest="Home">
+                  Home
+                </NavLinkTab>
+                <NavLinkTab to="explore" dataTest="Explore">
+                  Explore
+                </NavLinkTab>
+                {!user || user.isAnonymous ? (
+                  <NavLinkTab to="code" dataTest="Class Code">
+                    Class Code
                   </NavLinkTab>
-                  <NavLinkTab to="explore" dataTest="Explore">
-                    Explore
-                  </NavLinkTab>
-                  {!user || user.isAnonymous ? (
-                    <NavLinkTab to="code" dataTest="Class Code">
-                      Class Code
+                ) : null}
+                {user && !user.isAnonymous && (
+                  <>
+                    <NavLinkTab
+                      to={`activities/${user.userId}`}
+                      dataTest="Activities"
+                    >
+                      My Activities
                     </NavLinkTab>
-                  ) : null}
-                  {user && !user.isAnonymous && (
-                    <>
-                      <NavLinkTab
-                        to={`activities/${user.userId}`}
-                        dataTest="Activities"
-                      >
-                        My Activities
+                    <NavLinkTab to={`assigned`} dataTest="Assigned">
+                      Assigned to Me
+                    </NavLinkTab>
+                    {user.isAdmin && (
+                      <NavLinkTab to="admin" dataTest="Admin">
+                        Admin
                       </NavLinkTab>
-                      <NavLinkTab to={`assigned`} dataTest="Assigned">
-                        Assigned to Me
-                      </NavLinkTab>
-                      {user.isAdmin && (
-                        <NavLinkTab to="admin" dataTest="Admin">
-                          Admin
-                        </NavLinkTab>
-                      )}
-                    </>
-                  )}
-                </HStack>
-              </GridItem>
-            </Show>
+                    )}
+                  </>
+                )}
+              </HStack>
+            </GridItem>
             <GridItem area="rightHeader">
               <Flex columnGap="10px">
-                <Menu autoSelect={helpMenuShouldFocusFirst}>
-                  <MenuButton as={Button} color="doenet.canvastext">
+                {/* <MenuRoot autoSelect={helpMenuShouldFocusFirst}> */}
+                <MenuRoot>
+                  <MenuTrigger
+                    as={Button}
+                    color="doenet.canvastext"
+                    backgroundColor="doenet.mainGray"
+                  >
                     Help
-                  </MenuButton>
-                  <MenuList>
-                    <Link href="mailto:info@doenet.org">
-                      <MenuItem>
-                        <HStack>
-                          <HiOutlineMail fontSize="12pt" />
-                          <Text>Email us</Text>
-                        </HStack>
-                      </MenuItem>
-                    </Link>
-                    <Link href="https://discord.gg/PUduwtKJ5h">
-                      <MenuItem>
-                        <HStack>
-                          <BsDiscord fontSize="12pt" />
-                          <Text>Join our Discord</Text>
-                        </HStack>
-                      </MenuItem>
-                    </Link>
+                  </MenuTrigger>
+                  <MenuContent>
+                    <MenuItem value="mailto:info@doenet.org">
+                      <HStack>
+                        <HiOutlineMail fontSize="12pt" />
+                        <Text>Email us</Text>
+                      </HStack>
+                    </MenuItem>
+                    <MenuItem value="https://discord.gg/PUduwtKJ5h">
+                      <HStack>
+                        <BsDiscord fontSize="12pt" />
+                        <Text>Join our Discord</Text>
+                      </HStack>
+                    </MenuItem>
 
-                    <Link
-                      href="https://www.doenet.org/activityViewer/_7KL7tiBBS2MhM6k1OrPt4"
-                      isExternal
-                      data-test="Documentation Link"
-                    >
-                      <MenuItem>
-                        <HStack>
-                          <ExternalLinkIcon />
-                          <Text>Authoring Docs</Text>
-                        </HStack>
-                      </MenuItem>
-                    </Link>
-                  </MenuList>
-                </Menu>
+                    <MenuItem value="https://www.doenet.org/activityViewer/_7KL7tiBBS2MhM6k1OrPt4">
+                      <HStack>
+                        <ExternalLinkIcon />
+                        <Text>Authoring Docs</Text>
+                      </HStack>
+                    </MenuItem>
+                  </MenuContent>
+                </MenuRoot>
 
                 {user ? (
                   <Center h="40px" mr="10px">
-                    <Menu>
-                      <MenuButton>
+                    <MenuRoot>
+                      <MenuTrigger>
                         <Avatar size="sm" name={`${createFullName(user)}`} />
-                      </MenuButton>
-                      <MenuList>
+                      </MenuTrigger>
+                      <MenuContent>
                         <VStack mb="20px">
                           <Avatar size="xl" name={`${createFullName(user)}`} />
                           <Text>{createFullName(user)}</Text>
@@ -262,14 +251,14 @@ export function SiteHeader() {
                             <Link href={`/signIn`}>Sign in to save work</Link>
                           ) : null}
                         </VStack>
-                        <MenuItem as={Link} href="/changeName">
+                        <MenuItem as={Link} value="/changeName">
                           Update name
                         </MenuItem>
-                        <MenuItem as="a" href="/api/logout">
+                        <MenuItem as="a" value="/api/logout">
                           Log Out
                         </MenuItem>
-                      </MenuList>
-                    </Menu>
+                      </MenuContent>
+                    </MenuRoot>
                   </Center>
                 ) : (
                   <Center h="40px" mr="10px">
@@ -278,51 +267,48 @@ export function SiteHeader() {
                     </NavLinkTab>
                   </Center>
                 )}
-                <Hide above="md">
-                  <Center h="40px" mr="10px">
-                    <Menu autoSelect={false}>
-                      <MenuButton
-                        as={IconButton}
-                        aria-label="Menu"
-                        icon={<HamburgerIcon boxSize="30px" />}
-                      />
-                      <MenuList>
-                        <NavLinkDropdownTab to="/" dataTest="Home">
-                          Home
+                <Center h="40px" mr="10px" hideFrom="md">
+                  {/* <MenuRoot autoSelect={false}> */}
+                  <MenuRoot>
+                    <MenuTrigger as={IconButton} aria-label="Menu">
+                      <HamburgerIcon boxSize="30px" />
+                    </MenuTrigger>
+                    <MenuContent>
+                      <NavLinkDropdownTab to="/" dataTest="Home">
+                        Home
+                      </NavLinkDropdownTab>
+                      <NavLinkDropdownTab to="explore" dataTest="Explore">
+                        Explore
+                      </NavLinkDropdownTab>
+                      {!user || user.isAnonymous ? (
+                        <NavLinkDropdownTab to="code" dataTest="Class Code">
+                          Class Code
                         </NavLinkDropdownTab>
-                        <NavLinkDropdownTab to="explore" dataTest="Explore">
-                          Explore
-                        </NavLinkDropdownTab>
-                        {!user || user.isAnonymous ? (
-                          <NavLinkDropdownTab to="code" dataTest="Class Code">
-                            Class Code
+                      ) : null}
+                      {user && !user.isAnonymous && (
+                        <>
+                          <NavLinkDropdownTab
+                            to={`activities/${user.userId}`}
+                            dataTest="Activities"
+                          >
+                            Activities
                           </NavLinkDropdownTab>
-                        ) : null}
-                        {user && !user.isAnonymous && (
-                          <>
-                            <NavLinkDropdownTab
-                              to={`activities/${user.userId}`}
-                              dataTest="Activities"
-                            >
-                              Activities
+                          <NavLinkDropdownTab
+                            to={`assigned`}
+                            dataTest="Assigned"
+                          >
+                            Assigned
+                          </NavLinkDropdownTab>
+                          {user.isAdmin && (
+                            <NavLinkDropdownTab to="admin" dataTest="Admin">
+                              Admin
                             </NavLinkDropdownTab>
-                            <NavLinkDropdownTab
-                              to={`assigned`}
-                              dataTest="Assigned"
-                            >
-                              Assigned
-                            </NavLinkDropdownTab>
-                            {user.isAdmin && (
-                              <NavLinkDropdownTab to="admin" dataTest="Admin">
-                                Admin
-                              </NavLinkDropdownTab>
-                            )}
-                          </>
-                        )}
-                      </MenuList>
-                    </Menu>
-                  </Center>
-                </Hide>
+                          )}
+                        </>
+                      )}
+                    </MenuContent>
+                  </MenuRoot>
+                </Center>
               </Flex>
             </GridItem>
           </Grid>
