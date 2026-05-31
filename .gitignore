@@ -39,3 +39,7 @@ yarn-error.log*
 parallel-weights.json
 
 **/src/tempcodes
+
+# Locally-served DoenetML standalone bundle (downloaded in CI / for local testing, #2957)
+/apps/app/public/doenet-standalone.js
+/apps/app/public/doenet-standalone.css

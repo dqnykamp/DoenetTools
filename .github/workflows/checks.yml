@@ -136,6 +136,23 @@ jobs:
         env:
           NODE_ENV: development
 
+      # Fetch the DoenetML standalone bundle once and serve it from the app's
+      # own origin, so the editor/viewer iframe loads it from localhost instead
+      # of jsdelivr. The per-test in-browser fetch of this ~5MB bundle from the
+      # CDN stalls under concurrent CI load and leaves the viewer blank — the
+      # root cause of the flaky editor/viewer e2e tests. See issue #2957.
+      # @latest matches what real users load; one robust setup fetch replaces
+      # many fragile per-test fetches.
+      - name: Fetch DoenetML standalone bundle for local serving
+        run: |
+          mkdir -p apps/app/public
+          curl -fsSL --retry 5 --retry-delay 5 --max-time 180 \
+            https://cdn.jsdelivr.net/npm/@doenet/standalone@latest/doenet-standalone.js \
+            -o apps/app/public/doenet-standalone.js
+          curl -fsSL --retry 5 --retry-delay 5 --max-time 180 \
+            https://cdn.jsdelivr.net/npm/@doenet/standalone@latest/style.css \
+            -o apps/app/public/doenet-standalone.css
+
       # Start client dev server in background (port 8000)
       - name: Start client
         run: |
@@ -143,6 +160,8 @@ jobs:
           echo $! > /tmp/client.pid
         env:
           NODE_ENV: production
+          VITE_DOENET_STANDALONE_URL: http://localhost:8000/doenet-standalone.js
+          VITE_DOENET_STANDALONE_CSS_URL: http://localhost:8000/doenet-standalone.css
 
       # Wait for servers to be ready
       - name: Wait for servers
@@ -249,6 +268,19 @@ jobs:
         env:
           NODE_ENV: development
 
+      # Fetch the DoenetML standalone bundle once and serve it locally (see the
+      # e2e-tests job for rationale) so the editor/viewer iframe avoids the
+      # under-load jsdelivr fetch. See issue #2957.
+      - name: Fetch DoenetML standalone bundle for local serving
+        run: |
+          mkdir -p apps/app/public
+          curl -fsSL --retry 5 --retry-delay 5 --max-time 180 \
+            https://cdn.jsdelivr.net/npm/@doenet/standalone@latest/doenet-standalone.js \
+            -o apps/app/public/doenet-standalone.js
+          curl -fsSL --retry 5 --retry-delay 5 --max-time 180 \
+            https://cdn.jsdelivr.net/npm/@doenet/standalone@latest/style.css \
+            -o apps/app/public/doenet-standalone.css
+
       # Start client dev server in background
       - name: Start client
         run: |
@@ -256,6 +288,8 @@ jobs:
           echo $! > /tmp/client.pid
         env:
           NODE_ENV: production
+          VITE_DOENET_STANDALONE_URL: http://localhost:8000/doenet-standalone.js
+          VITE_DOENET_STANDALONE_CSS_URL: http://localhost:8000/doenet-standalone.css
 
       # Wait for servers to be ready
       - name: Wait for servers

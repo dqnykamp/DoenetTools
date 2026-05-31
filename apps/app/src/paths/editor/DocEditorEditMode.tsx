@@ -4,6 +4,10 @@ import { DoenetmlVersion } from "../../types";
 import { DoenetEditor } from "@doenet/doenetml-iframe";
 import axios, { AxiosError } from "axios";
 import { EditorContext } from "./EditorHeader";
+import {
+  doenetStandaloneUrl,
+  doenetStandaloneCssUrl,
+} from "../../utils/doenetStandalone";
 
 export async function loader({ params }: { params: any }) {
   const {
@@ -180,6 +184,12 @@ function DocumentEditor({
       border="none"
       readOnly={readOnly}
       doenetViewerUrl={doenetViewerUrl}
+      // In CI, point the iframe at a locally-served standalone bundle instead of
+      // the jsdelivr CDN (which stalls under concurrent load and leaves the
+      // viewer blank). Undefined in dev/prod => the component keeps its CDN
+      // default, so behavior is unchanged there. See issue #2957.
+      standaloneUrl={doenetStandaloneUrl}
+      cssUrl={doenetStandaloneCssUrl}
     />
   );
 }
